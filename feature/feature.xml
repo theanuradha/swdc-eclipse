@@ -6,15 +6,16 @@
       provider-name="Software.com">
 
    <description url="http://www.example.com/description">
-      [Enter Feature Description here.]
+      Insights into how you code.
    </description>
 
    <copyright url="http://www.example.com/copyright">
-      [Enter Copyright Description here.]
+      Copyright (c) 2018 Software.co Technologies, Inc. All Rights
+Reserved.
    </copyright>
 
    <license url="http://www.example.com/license">
-      [Enter License Description here.]
+      Reproduction of this material is strictly forbidden unless prior written permission is obtained from Software.co Technologies, Inc.
    </license>
 
    <url>
