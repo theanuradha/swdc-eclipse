@@ -14,57 +14,33 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.swt.SWT;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
 
 
 public class SoftwareCoHttpClientManager {
 	
-	private final static String PLUGIN_MGR_ENDPOINT = "http://localhost:19234/api/v1/data";
 	private final static String PM_BUCKET = "https://s3-us-west-1.amazonaws.com/swdc-plugin-manager/";
     private final static String PM_NAME = "software";
 
 	private static SoftwareCoHttpClientManager instance = null;
-
-	private ExecutorService executorService;
-	private HttpClient httpClient;
-	private boolean pluginManagerConnectionErrorShown = false;
 	
-	private static boolean downloadingPM = false;
-    private static boolean pluginManagerInstallErrorShown = false;
+	protected static boolean downloadingPM = false;
+    
+    private SoftwareCoSessionManager sessionMgr = SoftwareCoSessionManager.getInstance();
 
 	/**
 	 * Protected constructor to defeat instantiation
 	 */
 	protected SoftwareCoHttpClientManager() {
-		// initialize the HttpClient
-		RequestConfig config = RequestConfig.custom()
-				.setConnectTimeout(4000)
-				.setConnectionRequestTimeout(4000)
-				.setSocketTimeout(4000)
-				.build();
-		
-		httpClient = HttpClientBuilder
-				.create()
-				.setDefaultRequestConfig(config)
-				.build();
-		
-		executorService = Executors.newFixedThreadPool(1);
+		//
 	}
 
 	public static SoftwareCoHttpClientManager getInstance() {
@@ -74,19 +50,11 @@ public class SoftwareCoHttpClientManager {
 		return instance;
 	}
 	
-	private static boolean isWindows() {
-		return (SWT.getPlatform().startsWith("win"));
-	}
-	
-	private static boolean isMac() {
-		return (SWT.getPlatform().equals("carbon") || SWT.getPlatform().equals("cocoa"));
-	}
-	
 	private static String getFileUrl() {
         String fileUrl = PM_BUCKET + PM_NAME;
-        if (isWindows()) {
+        if (SoftwareCo.isWindows()) {
             fileUrl += ".exe";
-        } else if (isMac()) {
+        } else if (SoftwareCo.isMac()) {
             fileUrl += ".dmg";
         } else {
             fileUrl += ".deb";
@@ -95,10 +63,10 @@ public class SoftwareCoHttpClientManager {
     }
 
     private static String getDownloadFilePathName() {
-        String downloadFilePathName = System.getProperty("user.home");
-        if (isWindows()) {
+        String downloadFilePathName = SoftwareCo.getUserHomeDir();
+        if (SoftwareCo.isWindows()) {
             downloadFilePathName += "\\Desktop\\" + PM_NAME + ".exe";
-        } else if (isMac()) {
+        } else if (SoftwareCo.isMac()) {
             downloadFilePathName += "/Desktop/" + PM_NAME + ".dmg";
         } else {
             downloadFilePathName += "/Desktop/" + PM_NAME + ".deb";
@@ -108,16 +76,16 @@ public class SoftwareCoHttpClientManager {
     }
 
     private static String getPmInstallDirectoryPath() {
-        if (isWindows()) {
-            return System.getProperty("user.home") + "\\AppData\\Local\\Programs";
-        } else if (isMac()) {
+        if (SoftwareCo.isWindows()) {
+            return SoftwareCo.getUserHomeDir() + "\\AppData\\Local\\Programs";
+        } else if (SoftwareCo.isMac()) {
             return "/Applications";
         } else {
             return "/user/lib";
         }
     }
 
-    private static boolean hasPluginInstalled() {
+    protected static boolean hasPluginInstalled() {
         String installDir = getPmInstallDirectoryPath();
         File f = new File(installDir);
         if (f.exists() && f.isDirectory()) {
@@ -144,9 +112,9 @@ public class SoftwareCoHttpClientManager {
 				String projectName = keystrokeCount.getProject().getName();
 				KeystrokeDataSendTask sendTask = new KeystrokeDataSendTask(keystrokeCount);
 				
-				Future<HttpResponse> response = executorService.submit(sendTask);
+				Future<HttpResponse> response = SoftwareCoUtils.executorService.submit(sendTask);
 				
-				boolean postFailed = true;
+				boolean isRequestOk = true;
 				
 				//
 				// Handle the Future if it exist
@@ -158,7 +126,7 @@ public class SoftwareCoHttpClientManager {
 						
 						if (httpResponse != null) {
 							//
-							// Handle the response from the Future
+							// Handle the response from the Future (consume the entity to prevent connection pool leak/timeout)
 							//
 							String entityResult = "";
 							if (httpResponse.getEntity() != null) {
@@ -176,67 +144,25 @@ public class SoftwareCoHttpClientManager {
 							if (responseStatus >= 300) {
 								SoftwareCoLogger.error("Software.com: Unable to send the keystroke payload, "
 										+ "response: [status: " + responseStatus + ", entityResult: '" + entityResult + "']");
-							} else {
-								// only condition where postFailed will be set to false
-								postFailed = false;
+								isRequestOk = false;
 							}
 						}
 						
 					} catch (InterruptedException | ExecutionException e) {
 						SoftwareCoLogger.error("Software.com: Unable to get the response from the http request.", e);
+						isRequestOk = false;
 					}
+				}
+				
+				if (!isRequestOk) {
+					// save the data offline
+					String payload = SoftwareCo.gson.toJson(keystrokeCount);
+					sessionMgr.storePayload(payload);
+					sessionMgr.chekUserAuthenticationStatus();
 				}
 				
 				// reset the data
 				SoftwareCoKeystrokeManager.getInstance().resetData(projectName);
-				if (!downloadingPM && postFailed && !pluginManagerConnectionErrorShown) {
-					
-					workbench.getDisplay().asyncExec(new Runnable() {
-						public void run() {
-					
-							// first check to see if the PM was installed
-							if (!pluginManagerInstallErrorShown && !hasPluginInstalled()) {
-								pluginManagerInstallErrorShown = true;
-								String msg = "We are having trouble sending data to Software.com. "
-										+ "The Plugin Manager may not be installed. Would you like to download it now?";
-								MessageDialog dialog = new MessageDialog(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), // parentShell
-										"Software", // dialogTitle
-										null, // dialogTitleImage
-										msg, // dialogMessage
-										MessageDialog.INFORMATION, // dialogImageType
-										new String[] { "Download", "Not now" }, // dialogButtonLabels
-										0 // defaultIndex
-								);
-								// waits until the user has closed the dialog and returns the dialog's return code
-								int selectedButtonIdx = dialog.open();
-								dialog.close();
-								
-								if (selectedButtonIdx == 0) {
-									// download it
-									DownloadPMHandler downloadTask = new DownloadPMHandler();
-									executorService.submit(downloadTask);
-								}
-								return;
-							}
-							
-							
-							pluginManagerConnectionErrorShown = true;
-							//
-							// show a warning popup once
-							//
-							String msg = "We are having trouble sending data to Software.com. Please make sure the Plugin Manager is running on and logged in.";
-							MessageDialog dialog = new MessageDialog(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), // parentShell
-									"Software", // dialogTitle
-									null, // dialogTitleImage
-									msg, // dialogMessage
-									MessageDialog.WARNING, // dialogImageType
-									new String[] { IDialogConstants.OK_LABEL }, // dialogButtonLabels
-									0 // defaultIndex
-							);
-							dialog.open();
-						}
-					});
-				}
 				
 			}
 		});
@@ -300,12 +226,13 @@ public class SoftwareCoHttpClientManager {
 			//
 			String keystrokeCountJson = SoftwareCo.gson.toJson(keystrokeCount);
 			SoftwareCoLogger.info("Software.com: sending: " + keystrokeCountJson);
+			HttpPost request = null;
 			try {
 
 				//
 				// Add the json body to the outgoing post request
 				//
-				HttpPost request = new HttpPost(PLUGIN_MGR_ENDPOINT);
+				request = new HttpPost(SoftwareCoUtils.api_endpoint);
 				StringEntity params = new StringEntity(keystrokeCountJson);
 				request.addHeader("Content-type", "application/json");
 				request.setEntity(params);
@@ -313,13 +240,17 @@ public class SoftwareCoHttpClientManager {
 				//
 				// Send the POST request
 				//
-				HttpResponse response = httpClient.execute(request);
+				HttpResponse response = SoftwareCoUtils.httpClient.execute(request);
 				//
 				// Return the response
 				//
 				return response;
 			} catch (Exception e) {
 				SoftwareCoLogger.error("Software.com: Unable to send the keystroke payload request.", e);
+			} finally {
+				if (request != null) {
+					request.releaseConnection();
+				}
 			}
 			
 			return null;

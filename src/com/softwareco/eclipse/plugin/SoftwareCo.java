@@ -60,8 +60,11 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 	private static SoftwareCoKeystrokeManager keystrokeMgr;
 	private static SoftwareCoHttpClientManager clientMgr;
 	
+	private SoftwareCoSessionManager sessionMgr = SoftwareCoSessionManager.getInstance();
+	
 	// private keystroke processor timer and client manager
 	private Timer timer;
+	private Timer kpmFetchTimer;
 
 	/**
 	 * The constructor
@@ -104,6 +107,8 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 				}
 
 				SoftwareCoLogger.debug("Software.com: Loaded v" + VERSION + " on platform: " + SWT.getPlatform());
+				
+				SoftwareCoUtils.setStatusLineMessage("Software v" + VERSION);
 
 				if ( window.getPartService() == null ) {
 					//
@@ -138,6 +143,7 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 				} catch (Exception e) {
 					// active editor may not be ready
 				}
+				
 				if ( input instanceof IURIEditorInput ) {
 
 					//
@@ -149,6 +155,23 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 						editorListener.addDocumentListener( document );
 					}
 				}
+				
+				// run the initial calls in 5 seconds
+				new Thread(() -> {
+			        try {
+			            Thread.sleep(1000 * 5);
+			            sessionMgr.chekUserAuthenticationStatus();
+			            sessionMgr.fetchDailyKpmSessionInfo();
+			            sessionMgr.sendOfflineData();
+			        }
+			        catch (Exception e){
+			            System.err.println(e);
+			        }
+			    }).start();
+				
+				// run the kpm fetch task every minute
+				kpmFetchTimer = new Timer();
+				kpmFetchTimer.scheduleAtFixedRate(new ProcessKpmSessionInfoTask(), 60 * 1000, 60 * 1000);
 			}
 		});
 	}
@@ -172,12 +195,29 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 		}
 		
 		//
-		// Kill the timer
+		// Kill the timers
 		//
 		if ( timer != null ) {
 			timer.cancel();
 			timer = null;
 		}
+		
+		if (kpmFetchTimer != null) {
+			kpmFetchTimer.cancel();
+			kpmFetchTimer = null;
+		}
+	}
+	
+	public static String getUserHomeDir() {
+		return System.getProperty("user.home");
+	}
+	
+	public static boolean isWindows() {
+		return (SWT.getPlatform().startsWith("win"));
+	}
+	
+	public static boolean isMac() {
+		return (SWT.getPlatform().equals("carbon") || SWT.getPlatform().equals("cocoa"));
 	}
 	
 	public static void handleFileOpenedEvent() {
@@ -371,6 +411,12 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 	    		processKeystrokes();
         }
     }
+	
+	private class ProcessKpmSessionInfoTask extends TimerTask {
+		public void run() {
+			sessionMgr.fetchDailyKpmSessionInfo();
+		}
+	}
 	
 	/**
 	 * Retrieve the IEditorInput which gives us the current Document. It will return null
