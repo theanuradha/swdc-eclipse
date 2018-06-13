@@ -8,6 +8,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -16,13 +18,18 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IStatusLineManager;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.texteditor.StatusLineContributionItem;
 
 import com.google.gson.JsonObject;
 
@@ -122,14 +129,15 @@ public class SoftwareCoUtils {
 		return true;
 	}
 	
-	public static void setStatusLineMessage(final String msg) {
+	public static void setStatusLineMessage(final String msg, final String tooltip) {
 		final IWorkbench workbench = PlatformUI.getWorkbench();
 
 		workbench.getDisplay().asyncExec(new Runnable() {
 			public void run() {
-				IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
 				IStatusLineManager statusLineManager = null;
+				IWorkbenchWindow window = null;
 				try {
+					window = workbench.getActiveWorkbenchWindow();
 					IWorkbenchPage[] workbenchPages = window.getPages();
 					if (workbenchPages != null) {
 						for (IWorkbenchPage page : workbenchPages) {
@@ -144,7 +152,45 @@ public class SoftwareCoUtils {
 					SoftwareCoLogger.error("Unable to obtain status line manager.", e);
 				}
 				if (statusLineManager != null) {
-					statusLineManager.setMessage(msg);
+					IContributionItem contributeItem = statusLineManager.find("software.com");
+					if (contributeItem != null) {
+						statusLineManager.remove(contributeItem);
+					}
+					
+					StatusLineContributionItem item = new StatusLineContributionItem("software.com");
+					item.setText(msg);
+					item.setToolTipText(tooltip);
+					item.setVisible(true);
+
+					IAction actionHandler = new Action() {
+						@Override
+						public void run() {
+							String token = SoftwareCoSessionManager.getItem("token");
+							String url = SoftwareCoUtils.launch_url + "/login";
+							if (token != null) {
+								url += "?token=" + token;
+							}
+							try {
+								PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(url));
+								
+								// checkTokenAvailability
+								new Thread(() -> {
+							        try {
+							            Thread.sleep(1000 * 30);
+							            SoftwareCoSessionManager.checkTokenAvailability();
+							        }
+							        catch (Exception e){
+							            System.err.println(e);
+							        }
+							    }).start();
+							} catch (PartInitException | MalformedURLException e) {
+								SoftwareCoLogger.error("Failed to launch the url: " + url, e);
+							}
+						}
+					};
+					actionHandler.setToolTipText(tooltip);
+					item.setActionHandler(actionHandler);
+					statusLineManager.add(item);
 				}
 			}
 		});

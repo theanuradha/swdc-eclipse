@@ -108,7 +108,7 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 
 				SoftwareCoLogger.debug("Software.com: Loaded v" + VERSION + " on platform: " + SWT.getPlatform());
 				
-				SoftwareCoUtils.setStatusLineMessage("Software v" + VERSION);
+				SoftwareCoUtils.setStatusLineMessage("Software.com", "Loaded v" + VERSION);
 
 				if ( window.getPartService() == null ) {
 					//

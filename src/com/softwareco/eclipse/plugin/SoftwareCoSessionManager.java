@@ -26,6 +26,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
@@ -42,8 +43,7 @@ public class SoftwareCoSessionManager {
 	private static SoftwareCoSessionManager instance = null;
 	
 	private static long MILLIS_PER_HOUR = 1000 * 60 * 60;
-	private static int LONG_THRESHOLD_HOURS = 12;
-	private static int SHORT_THRESHOLD_HOURS = 1;
+	private static int LONG_THRESHOLD_HOURS = 24;
 	
 	private boolean confirmWindowOpen = false;
 	
@@ -56,7 +56,7 @@ public class SoftwareCoSessionManager {
 		return instance;
 	}
 	
-	private String getSoftwareDir() {
+	private static String getSoftwareDir() {
 	    String softwareDataDir = SoftwareCo.getUserHomeDir();
 	    if (SoftwareCo.isWindows()) {
 	        softwareDataDir += "\\.software";
@@ -73,7 +73,7 @@ public class SoftwareCoSessionManager {
 	    return softwareDataDir;
 	}
 	
-	private String getSoftwareSessionFile() {
+	private static String getSoftwareSessionFile() {
 	    String file = getSoftwareDir();
 	    if (SoftwareCo.isWindows()) {
 	        file += "\\session.json";
@@ -107,17 +107,21 @@ public class SoftwareCoSessionManager {
 	    		return true;
 	    }
 	    
-	    boolean isOk = SoftwareCoUtils.getResponseInfo(this.makeApiCall("/users/ping/", false, null)).isOk;
+	    boolean isOk = SoftwareCoUtils.getResponseInfo(makeApiCall("/users/ping/", false, null)).isOk;
 	    if (!isOk) {
 	    		lastTimeAuthenticated = -1;
 	    } else {
 	    		lastTimeAuthenticated = System.currentTimeMillis();
 	    }
+	    if (!isOk) {
+	    		// update the status bar with Sign Up message
+	    		SoftwareCoUtils.setStatusLineMessage("Software.com", "Double click to sign up to Software.com");
+	    }
 	    return isOk;
 	}
 	
 	private boolean isServerOnline() {
-		return SoftwareCoUtils.getResponseInfo(this.makeApiCall("/ping", false, null)).isOk;
+		return SoftwareCoUtils.getResponseInfo(makeApiCall("/ping", false, null)).isOk;
 	}
 
 	public void storePayload(String payload) {
@@ -158,7 +162,7 @@ public class SoftwareCoSessionManager {
 		    	 
 		    		br.close();
 		    		
-		    		if (SoftwareCoUtils.getResponseInfo(this.makeApiCall("/data/batch", true, jsonArray.getAsString())).isOk) {
+		    		if (SoftwareCoUtils.getResponseInfo(makeApiCall("/data/batch", true, jsonArray.getAsString())).isOk) {
 		    		
 			    		// delete the file
 			    		this.deleteFile(dataStoreFile);
@@ -169,7 +173,7 @@ public class SoftwareCoSessionManager {
 	    }
 	}
 
-	private void setItem(String key, String val) {
+	private static void setItem(String key, String val) {
 		JsonObject jsonObj = getSoftwareSessionAsJson();
 	    jsonObj.addProperty(key, val);
 
@@ -186,7 +190,7 @@ public class SoftwareCoSessionManager {
 	    }
 	}
 
-	private String getItem(String key) {
+	public static String getItem(String key) {
 		JsonObject jsonObj = getSoftwareSessionAsJson();
 		if (jsonObj != null && jsonObj.has(key)) {
 			return jsonObj.get(key).getAsString();
@@ -194,7 +198,7 @@ public class SoftwareCoSessionManager {
 		return null;
 	}
 
-	private JsonObject getSoftwareSessionAsJson() {
+	private static JsonObject getSoftwareSessionAsJson() {
 	    JsonObject data = null;
 
 	    String sessionFile = getSoftwareSessionFile();
@@ -223,50 +227,58 @@ public class SoftwareCoSessionManager {
 	}
 
 	public void chekUserAuthenticationStatus() {
-		String existingJwt = getItem("jwt");
-		if (isServerOnline() && !isAuthenticated() && isPastTimeThreshold()
-				&& confirmWindowOpen) {
+		boolean isOnline = isServerOnline();
+		boolean authenticated = isAuthenticated();
+		boolean pastThresholdTime = isPastTimeThreshold();
+		
+		if (isOnline && !authenticated && pastThresholdTime && !confirmWindowOpen) {
 	        // set the last update time so we don't try to ask too frequently
 	        setItem("eclipse_lastUpdateTime", String.valueOf(System.currentTimeMillis()));
 	        confirmWindowOpen = true;
 	        
 	        String msg = "To see insights into how you code, please sign in to Software.com.";
-	        if (existingJwt == null) {
-	        		msg = "We are having trouble sending data to Software.com, please sign in to see insights into how you code.";
-	        }
 	        
-	        MessageDialog dialog = new MessageDialog(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), // parentShell
-					"Software", // dialogTitle
-					null, // dialogTitleImage
-					msg, // dialogMessage
-					MessageDialog.QUESTION_WITH_CANCEL, // dialogImageType
-					new String[] { "Not now", "Login" }, // dialogButtonLabels
-					0 // defaultIndex
-			);
-			// waits until the user has closed the dialog and returns the dialog's return code
-			int selectedButtonIdx = dialog.open();
-			dialog.close();
-			
-			if (selectedButtonIdx == 1) {
-				// create the token value
-				String token = generateToken();
-				this.setItem("token", token);
-				// launch the browser with the login view
-				this.launchWebUrl(SoftwareCoUtils.launch_url + "/login?token=" + token);
-				
-				// checkTokenAvailability
-				new Thread(() -> {
-			        try {
-			            Thread.sleep(1000 * 30);
-			            this.checkTokenAvailability();
-			        }
-			        catch (Exception e){
-			            System.err.println(e);
-			        }
-			    }).start();
-			}
-			
-			confirmWindowOpen = false;
+	        final String dialogMsg = msg;
+	        
+	        final IWorkbench workbench = PlatformUI.getWorkbench();
+
+	        // show the launch browser to login dialogs
+			workbench.getDisplay().asyncExec(new Runnable() {
+				public void run() {
+			        MessageDialog dialog = new MessageDialog(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), // parentShell
+							"Software", // dialogTitle
+							null, // dialogTitleImage
+							dialogMsg, // dialogMessage
+							MessageDialog.INFORMATION, // dialogImageType
+							new String[] { "Not now", "Login" }, // dialogButtonLabels
+							1 // defaultIndex
+					);
+					// waits until the user has closed the dialog and returns the dialog's return code
+					int selectedButtonIdx = dialog.open();
+					dialog.close();
+					
+					if (selectedButtonIdx == 1) {
+						// create the token value
+						String token = generateToken();
+						setItem("token", token);
+						// launch the browser with the login view
+						launchWebUrl(SoftwareCoUtils.launch_url + "/login?token=" + token);
+						
+						// checkTokenAvailability
+						new Thread(() -> {
+					        try {
+					            Thread.sleep(1000 * 30);
+					            checkTokenAvailability();
+					        }
+					        catch (Exception e){
+					            System.err.println(e);
+					        }
+					    }).start();
+					}
+					
+					confirmWindowOpen = false;
+				}
+			});
 	        
 		}
 	}
@@ -275,37 +287,31 @@ public class SoftwareCoSessionManager {
 	 * Checks the last time we've updated the session info
 	 */
 	private boolean isPastTimeThreshold() {
-	    String existingJwt = getItem("jwt");
-	    int thresholdHoursBeforeCheckingAgain = (existingJwt != null)
-	        ? SHORT_THRESHOLD_HOURS
-	        : LONG_THRESHOLD_HOURS;
 	    String lastUpdateTimeStr = getItem("eclipse_lastUpdateTime");
 	    Long lastUpdateTime = (lastUpdateTimeStr != null) ? Long.valueOf(lastUpdateTimeStr) : null;
 	    if (lastUpdateTime != null &&
-	        System.currentTimeMillis() - lastUpdateTime.longValue() <
-	            MILLIS_PER_HOUR * thresholdHoursBeforeCheckingAgain
-	    ) {
+	        System.currentTimeMillis() - lastUpdateTime.longValue() < MILLIS_PER_HOUR * LONG_THRESHOLD_HOURS) {
 	        return false;
 	    }
 	    return true;
 	}
 	
-	private void checkTokenAvailability() {
-		String tokenVal = this.getItem("token");
+	public static void checkTokenAvailability() {
+		String tokenVal = getItem("token");
 		
 		JsonObject responseData = SoftwareCoUtils.getResponseInfo(
-				this.makeApiCall("/users/plugin/confirm?token=" + tokenVal, false, null)).jsonObj;
+				makeApiCall("/users/plugin/confirm?token=" + tokenVal, false, null)).jsonObj;
 		if (responseData != null) {
 			// update the jwt, user and eclipse_lastUpdateTime
-			this.setItem("jwt", responseData.get("jwt").getAsString());
-			this.setItem("user", responseData.get("user").getAsString());
-			this.setItem("eclipse_lastUpdateTime", String.valueOf(System.currentTimeMillis()));
+			setItem("jwt", responseData.get("jwt").getAsString());
+			setItem("user", responseData.get("user").getAsString());
+			setItem("eclipse_lastUpdateTime", String.valueOf(System.currentTimeMillis()));
 		} else {
 			// check again in a minute
 			new Thread(() -> {
 		        try {
 		            Thread.sleep(1000 * 60);
-		            this.checkTokenAvailability();
+		            checkTokenAvailability();
 		        }
 		        catch (Exception e){
 		            System.err.println(e);
@@ -327,7 +333,7 @@ public class SoftwareCoSessionManager {
 		long fromSeconds = Math.round(System.currentTimeMillis() / 1000);
 		// make an async call to get the kpm info
 		JsonObject jsonObj = SoftwareCoUtils.getResponseInfo(
-				this.makeApiCall("/sessions?from=" + fromSeconds +"&summary=true", false, null)).jsonObj;
+				makeApiCall("/sessions?from=" + fromSeconds +"&summary=true", false, null)).jsonObj;
 		if (jsonObj != null) {
 			int avgKpm = 0;
 			if (jsonObj.has("kpm")) {
@@ -349,9 +355,9 @@ public class SoftwareCoSessionManager {
                 sessionTime = totalMin + " min";
             }
             if (avgKpm > 0 || totalMin > 0) {
-            		SoftwareCoUtils.setStatusLineMessage(avgKpm + " KPM, " + sessionTime);
+            		SoftwareCoUtils.setStatusLineMessage(avgKpm + " KPM, " + sessionTime, "Double click to see more from Software.com");
             } else {
-            		SoftwareCoUtils.setStatusLineMessage("Software.com");
+            		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to see more from Software.com");
             }
 		}
 	}
@@ -364,7 +370,7 @@ public class SoftwareCoSessionManager {
 		}
 	}
 	
-	private HttpResponse makeApiCall(String api, boolean isPost, String payload) {
+	private static HttpResponse makeApiCall(String api, boolean isPost, String payload) {
         
 		SessionManagerHttpClient sendTask = new SessionManagerHttpClient(api, isPost, payload);
 		
@@ -390,7 +396,7 @@ public class SoftwareCoSessionManager {
 		return null;
 	}
 	
-	protected class SessionManagerHttpClient implements Callable<HttpResponse> {
+	protected static class SessionManagerHttpClient implements Callable<HttpResponse> {
 		
 		private String payload = null;
 		private String api = null;
@@ -450,13 +456,6 @@ public class SoftwareCoSessionManager {
 				return response;
 			} catch (Exception e) {
 				SoftwareCoLogger.error("Software.com: Unable to make api request.", e);
-			} finally {
-				if (getRequest != null) {
-					getRequest.releaseConnection();
-				}
-				if (postRequest != null) {
-					postRequest.releaseConnection();
-				}
 			}
 			
 			return null;
