@@ -108,6 +108,8 @@ public class SoftwareCoHttpClientManager {
 
 		workbench.getDisplay().asyncExec(new Runnable() {
 			public void run() {
+				
+				sessionMgr.sendOfflineData();
         
 				String projectName = keystrokeCount.getProject().getName();
 				KeystrokeDataSendTask sendTask = new KeystrokeDataSendTask(keystrokeCount);
@@ -224,22 +226,27 @@ public class SoftwareCoHttpClientManager {
 			//
 			// create the json string
 			//
-			String keystrokeCountJson = SoftwareCo.gson.toJson(keystrokeCount);
-			SoftwareCoLogger.info("Software.com: sending: " + keystrokeCountJson);
+			String kpmData = SoftwareCo.gson.toJson(keystrokeCount);
 			HttpPost request = null;
 			try {
 
 				//
 				// Add the json body to the outgoing post request
 				//
-				request = new HttpPost(SoftwareCoUtils.api_endpoint);
-				StringEntity params = new StringEntity(keystrokeCountJson);
+				request = new HttpPost(SoftwareCoUtils.api_endpoint + "/data");
+				String jwtToken = SoftwareCoSessionManager.getItem("jwt");
+                // we need the header, but check if it's null anyway
+                if (jwtToken != null) {
+                    request.addHeader("Authorization", jwtToken);
+                }
+				StringEntity params = new StringEntity(kpmData);
 				request.addHeader("Content-type", "application/json");
 				request.setEntity(params);
 
 				//
 				// Send the POST request
 				//
+				SoftwareCoUtils.logApiRequest(request, kpmData);
 				HttpResponse response = SoftwareCoUtils.httpClient.execute(request);
 				//
 				// Return the response

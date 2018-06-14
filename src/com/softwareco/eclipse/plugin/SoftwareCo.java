@@ -380,19 +380,13 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 			// Only send an update if the keystroke count object is not null and we have keystroke activity
 			//
 			if ( keystrokeCount != null && keystrokeCount.hasData() ) {
-				long nowInMillis = System.currentTimeMillis();
 
-				if ( wrapper.getLastUpdateTime() + 60000 < nowInMillis ) {
-
-					// update the last time we've sent the keystroke count
-					wrapper.setLastUpdateTime( nowInMillis );
-					keystrokeCount.setEnd( keystrokeCount.getStart() + 60 );
-					
-					//
-					// Send the info now
-					//
-					clientMgr.sendKeystrokeData(keystrokeCount);
-				}
+				keystrokeCount.setEnd( keystrokeCount.getStart() + 60 );
+				
+				//
+				// Send the info now
+				//
+				clientMgr.sendKeystrokeData(keystrokeCount);
 			}
 		}
 	}

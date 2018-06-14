@@ -17,6 +17,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -127,6 +128,26 @@ public class SoftwareCoUtils {
 			return false;
 		}
 		return true;
+	}
+	
+	public static void logApiRequest(HttpUriRequest req, String payload) {
+		
+//		String headers = "";
+//		StringBuffer sb = new StringBuffer();
+//		if (req.getAllHeaders() != null) {
+//			for (Header header : req.getAllHeaders()) {
+//				sb.append(header.getName()).append("=").append(header.getValue());
+//				sb.append(",");
+//			}
+//		}
+//		if (sb.length() > 0) {
+//			headers = sb.toString();
+//			headers = "{" + headers.substring(0, headers.lastIndexOf(",")) + "}";
+//		}
+		
+		SoftwareCoLogger.info("Software.com: executing request "
+				+ "[method: " + req.getMethod() + ", URI: " + req.getURI()
+				+ ", payload: " + payload + "]");
 	}
 	
 	public static void setStatusLineMessage(final String msg, final String tooltip) {

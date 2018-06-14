@@ -24,13 +24,13 @@ import java.util.concurrent.Future;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 /**
@@ -125,17 +125,23 @@ public class SoftwareCoSessionManager {
 	}
 
 	public void storePayload(String payload) {
+		if (payload == null || payload.length() == 0) {
+			return;
+		}
+		if (SoftwareCo.isWindows()) {
+			payload += "\r\n";
+		} else {
+			payload += "\n";
+		}
 		String dataStoreFile = getSoftwareDataStoreFile();
 		File f = new File(dataStoreFile);
-		if (f.exists()) {
-			try {
-				Writer output;
-				output = new BufferedWriter(new FileWriter(f, true));  //clears file every time
-				output.append(payload);
-				output.close();
-			} catch (Exception e) {
-				SoftwareCoLogger.error("Software.com: Error appending to the Software data store file", e);
-			}
+		try {
+			Writer output;
+			output = new BufferedWriter(new FileWriter(f, true));  //clears file every time
+			output.append(payload);
+			output.close();
+		} catch (Exception e) {
+			SoftwareCoLogger.error("Software.com: Error appending to the Software data store file", e);
 		}
 	}
 
@@ -144,7 +150,8 @@ public class SoftwareCoSessionManager {
 	    File f = new File(dataStoreFile);
 
 	    if (f.exists()) {
-	    		JsonArray jsonArray = new JsonArray();
+	    		// JsonArray jsonArray = new JsonArray();
+	    		StringBuffer sb = new StringBuffer();
 		    	try {
 		    		FileInputStream fis = new FileInputStream(f);
 		    		 
@@ -154,18 +161,23 @@ public class SoftwareCoSessionManager {
 		    		String line = null;
 		    		while ((line = br.readLine()) != null) {
 		    			if (line.length() > 0) {
-		    				// payloads.add(line);
-		    				JsonObject jsonObj = SoftwareCo.jsonParser.parse(line).getAsJsonObject();
-		    				jsonArray.add(jsonObj);
+		    				sb.append(line).append(",");
 		    			}
 		    		}
 		    	 
 		    		br.close();
 		    		
-		    		if (SoftwareCoUtils.getResponseInfo(makeApiCall("/data/batch", true, jsonArray.getAsString())).isOk) {
-		    		
-			    		// delete the file
-			    		this.deleteFile(dataStoreFile);
+		    		if (sb.length() > 0) {
+		    			String payloads = sb.toString();
+		    			payloads = payloads.substring(0, payloads.lastIndexOf(","));
+		    			payloads = "[" + payloads + "]";
+			    		if (SoftwareCoUtils.getResponseInfo(makeApiCall("/data/batch", true, payloads)).isOk) {
+			    		
+				    		// delete the file
+				    		this.deleteFile(dataStoreFile);
+			    		}
+		    		} else {
+		    			SoftwareCoLogger.info("Software.com: No offline data to send");
 		    		}
 		    	} catch (Exception e) {
 		    		SoftwareCoLogger.error("Software.com: Error trying to read and send offline data.", e);
@@ -410,46 +422,37 @@ public class SoftwareCoSessionManager {
 
 		@Override
 		public HttpResponse call() throws Exception {
-			HttpPost postRequest = null;
-			HttpGet getRequest = null;
+			HttpUriRequest req = null;
 			try {
 				
 				HttpResponse response = null;
-				String jwtToken = getItem("jwt");
-
+				
 				if (!isPost) {
-					getRequest = new HttpGet(SoftwareCoUtils.api_endpoint + "" + this.api);
-					getRequest.addHeader("Content-type", "application/json");
-					
-					// obtain the jwt session token if we have it
-					if (jwtToken != null) {
-						getRequest.addHeader("Authorization", jwtToken);
-					}
-					//
-					// Send the GET request
-					//
-					response = SoftwareCoUtils.httpClient.execute(getRequest);
+					req = new HttpGet(SoftwareCoUtils.api_endpoint + "" + this.api);
 				} else {
-					postRequest = new HttpPost(SoftwareCoUtils.api_endpoint + "" + this.api);
-					postRequest.addHeader("Content-type", "application/json");
-					
-					// obtain the jwt session token if we have it
-					if (jwtToken != null) {
-						postRequest.addHeader("Authorization", jwtToken);
-					}
+					req = new HttpPost(SoftwareCoUtils.api_endpoint + "" + this.api);
+
 					if (payload != null) {
 						//
 						// add the json payload
 						//
-						SoftwareCoLogger.info("Software.com: sending: " + payload);
 						StringEntity params = new StringEntity(payload);
-						postRequest.setEntity(params);
+						((HttpPost)req).setEntity(params);
 					}
-					//
-					// Send the POST request
-					//
-					response = SoftwareCoUtils.httpClient.execute(postRequest);
 				}
+				
+				String jwtToken = getItem("jwt");
+				// obtain the jwt session token if we have it
+				if (jwtToken != null) {
+					req.addHeader("Authorization", jwtToken);
+				}
+				
+				req.addHeader("Content-type", "application/json");
+				
+				// execute the request
+				SoftwareCoUtils.logApiRequest(req, payload);
+				response = SoftwareCoUtils.httpClient.execute(req);
+				
 				//
 				// Return the response
 				//
