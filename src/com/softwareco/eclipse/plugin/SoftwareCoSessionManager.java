@@ -248,7 +248,7 @@ public class SoftwareCoSessionManager {
 	        setItem("eclipse_lastUpdateTime", String.valueOf(System.currentTimeMillis()));
 	        confirmWindowOpen = true;
 	        
-	        String msg = "To see insights into how you code, please sign in to Software.com.";
+	        String msg = "To see your coding data in Software.com, please authenticate your account.";
 	        
 	        final String dialogMsg = msg;
 	        
@@ -262,7 +262,7 @@ public class SoftwareCoSessionManager {
 							null, // dialogTitleImage
 							dialogMsg, // dialogMessage
 							MessageDialog.INFORMATION, // dialogImageType
-							new String[] { "Not now", "Login" }, // dialogButtonLabels
+							new String[] { "Not now", "Authenticate" }, // dialogButtonLabels
 							1 // defaultIndex
 					);
 					// waits until the user has closed the dialog and returns the dialog's return code
