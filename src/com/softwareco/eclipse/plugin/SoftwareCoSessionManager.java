@@ -16,7 +16,6 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -115,7 +114,7 @@ public class SoftwareCoSessionManager {
 	    }
 	    if (!isOk) {
 	    		// update the status bar with Sign Up message
-	    		SoftwareCoUtils.setStatusLineMessage("Software.com", "Double click to sign up to Software.com");
+	    		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to sign in to Software.com", "pulse");
 	    }
 	    return isOk;
 	}
@@ -185,7 +184,7 @@ public class SoftwareCoSessionManager {
 	    }
 	}
 
-	private static void setItem(String key, String val) {
+	public static void setItem(String key, String val) {
 		JsonObject jsonObj = getSoftwareSessionAsJson();
 	    jsonObj.addProperty(key, val);
 
@@ -242,13 +241,13 @@ public class SoftwareCoSessionManager {
 		boolean isOnline = isServerOnline();
 		boolean authenticated = isAuthenticated();
 		boolean pastThresholdTime = isPastTimeThreshold();
+		String jwtToken = getItem("jwt");
 		
-		if (isOnline && !authenticated && pastThresholdTime && !confirmWindowOpen) {
+		String msg = "To see your coding data in Software.com, please sign in to your account.";
+		if (isOnline && !authenticated && pastThresholdTime && !confirmWindowOpen && jwtToken == null) {
 	        // set the last update time so we don't try to ask too frequently
 	        setItem("eclipse_lastUpdateTime", String.valueOf(System.currentTimeMillis()));
 	        confirmWindowOpen = true;
-	        
-	        String msg = "To see your coding data in Software.com, please authenticate your account.";
 	        
 	        final String dialogMsg = msg;
 	        
@@ -271,27 +270,32 @@ public class SoftwareCoSessionManager {
 					
 					if (selectedButtonIdx == 1) {
 						// create the token value
-						String token = generateToken();
+						String token = SoftwareCoUtils.generateToken();
 						setItem("token", token);
 						// launch the browser with the login view
 						launchWebUrl(SoftwareCoUtils.launch_url + "/login?token=" + token);
 						
-						// checkTokenAvailability
-						new Thread(() -> {
-					        try {
-					            Thread.sleep(1000 * 30);
-					            checkTokenAvailability();
-					        }
-					        catch (Exception e){
-					            System.err.println(e);
-					        }
-					    }).start();
 					}
 					
 					confirmWindowOpen = false;
 				}
 			});
 	        
+		}
+		
+		if (!authenticated) {
+			SoftwareCoUtils.setStatusLineMessage("Software.com", msg, "alert");
+			
+			// checkTokenAvailability
+			new Thread(() -> {
+		        try {
+		            Thread.sleep(1000 * 60);
+		            checkTokenAvailability();
+		        }
+		        catch (Exception e){
+		            System.err.println(e);
+		        }
+		    }).start();
 		}
 	}
 
@@ -331,11 +335,6 @@ public class SoftwareCoSessionManager {
 		    }).start();
 		}
 	}
-
-	private String generateToken() {
-        String uuid = UUID.randomUUID().toString();
-        return uuid.replace("-", "");
-    }
 	
 	public void fetchDailyKpmSessionInfo() {
 		if (!isAuthenticated()) {
@@ -347,6 +346,10 @@ public class SoftwareCoSessionManager {
 		JsonObject jsonObj = SoftwareCoUtils.getResponseInfo(
 				makeApiCall("/sessions?from=" + fromSeconds +"&summary=true", false, null)).jsonObj;
 		if (jsonObj != null) {
+			boolean inFlow = true;
+			if (jsonObj.has("inFlow")) {
+				inFlow = jsonObj.get("inFlow").getAsBoolean();
+			}
 			int avgKpm = 0;
 			if (jsonObj.has("kpm")) {
 				avgKpm = jsonObj.get("kpm").getAsInt();
@@ -359,7 +362,6 @@ public class SoftwareCoSessionManager {
             if (totalMin == 60) {
                 sessionTime = "1 hr";
             } else if (totalMin > 60) {
-                // sessionTime = (totalMin / 60).toFixed(2) + " hrs";
             		sessionTime =  String.format("%.2f", (totalMin / 60)) + " hrs";
             } else if (totalMin == 1) {
                 sessionTime = "1 min";
@@ -367,9 +369,10 @@ public class SoftwareCoSessionManager {
                 sessionTime = totalMin + " min";
             }
             if (avgKpm > 0 || totalMin > 0) {
-            		SoftwareCoUtils.setStatusLineMessage(avgKpm + " KPM, " + sessionTime, "Double click to see more from Software.com");
+            		String icon = (inFlow) ? "rocket" : "flame";
+            		SoftwareCoUtils.setStatusLineMessage(avgKpm + " KPM, " + sessionTime, "Click to see more from Software.com", icon);
             } else {
-            		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to see more from Software.com");
+            		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to see more from Software.com", "pulse");
             }
 		}
 	}

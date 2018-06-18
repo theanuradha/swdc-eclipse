@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -19,10 +20,10 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IStatusLineManager;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbench;
@@ -150,7 +151,7 @@ public class SoftwareCoUtils {
 				+ ", payload: " + payload + "]");
 	}
 	
-	public static void setStatusLineMessage(final String msg, final String tooltip) {
+	public static void setStatusLineMessage(final String msg, final String tooltip, final String iconName) {
 		final IWorkbench workbench = PlatformUI.getWorkbench();
 
 		workbench.getDisplay().asyncExec(new Runnable() {
@@ -178,42 +179,64 @@ public class SoftwareCoUtils {
 						statusLineManager.remove(contributeItem);
 					}
 					
-					StatusLineContributionItem item = new StatusLineContributionItem("software.com");
-					item.setText(msg);
-					item.setToolTipText(tooltip);
-					item.setVisible(true);
-
-					IAction actionHandler = new Action() {
+					// create the custom item
+					com.softwareco.eclipse.plugin.StatusLineContributionItem myItem =
+							new com.softwareco.eclipse.plugin.StatusLineContributionItem(
+									"software.com",
+									iconName);
+					
+					Listener listener = new Listener() {
+						
 						@Override
-						public void run() {
-							String token = SoftwareCoSessionManager.getItem("token");
-							String url = SoftwareCoUtils.launch_url + "/login";
-							if (token != null) {
-								url += "?token=" + token;
+						public void handleEvent(Event event) {
+							SoftwareCoLogger.info("Event clicked + " + event.toString() + ".");
+							String existingJwt = SoftwareCoSessionManager.getItem("jwt");
+							
+							String url = SoftwareCoUtils.launch_url;
+							if (existingJwt == null) {
+								String token = generateToken();
+								SoftwareCoSessionManager.setItem("token", token);
+								url += "/login?token=" + token;
 							}
+							
 							try {
 								PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(url));
-								
-								// checkTokenAvailability
-								new Thread(() -> {
-							        try {
-							            Thread.sleep(1000 * 30);
-							            SoftwareCoSessionManager.checkTokenAvailability();
-							        }
-							        catch (Exception e){
-							            System.err.println(e);
-							        }
-							    }).start();
 							} catch (PartInitException | MalformedURLException e) {
 								SoftwareCoLogger.error("Failed to launch the url: " + url, e);
 							}
+							
 						}
 					};
-					actionHandler.setToolTipText(tooltip);
-					item.setActionHandler(actionHandler);
-					statusLineManager.add(item);
+					myItem.addClickListener(listener);
+					
+					myItem.setText(msg);
+					myItem.setToolTipText(tooltip);
+					myItem.setVisible(true);
+
+					String firstContribItem = null;
+					for (IContributionItem contribItem : statusLineManager.getItems()) {
+						if (contribItem instanceof StatusLineContributionItem) {
+							if (contribItem.getId().toLowerCase().equals("elementstate")) {
+								firstContribItem = contribItem.getId();
+							}
+						}
+					}
+					if (firstContribItem != null) {
+						statusLineManager.insertBefore(firstContribItem, myItem);
+					} else {
+						statusLineManager.add(myItem);
+					}
+					
+					// show the item right away
+					statusLineManager.markDirty();
+					statusLineManager.update(true);
 				}
 			}
 		});
 	}
+	
+	public static String generateToken() {
+        String uuid = UUID.randomUUID().toString();
+        return uuid.replace("-", "");
+    }
 }
