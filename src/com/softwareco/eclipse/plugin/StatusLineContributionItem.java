@@ -168,16 +168,17 @@ public class StatusLineContributionItem extends ContributionItem {
                 label.setForeground(label.getParent().getForeground());
                 label.setText(escape(text));
                 
-                ImageDescriptor imgDescriptor = SoftwareCo.getImageDescriptor("assets/" + iconName + ".gif");
-                // i.e. URLImageDescriptor(platform:/plugin/com.software.eclipse.plugin/assets/alert.gif)
-                try {
-                		image = imgDescriptor.createImage(display);
-                } catch (Exception e) {
-                		SoftwareCoLogger.error("Unable to create status bar icon from " + iconName);
-	                image = PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_INFO_TSK);
+                if (iconName != null) {
+	                ImageDescriptor imgDescriptor = SoftwareCo.getImageDescriptor("assets/" + iconName + ".gif");
+	                // i.e. URLImageDescriptor(platform:/plugin/com.software.eclipse.plugin/assets/ionicons_svg_md-alert.gif)
+	                try {
+	                		image = imgDescriptor.createImage(display);
+	                		label.setImage(image);
+	                } catch (Exception e) {
+	                		SoftwareCoLogger.error("Unable to create status bar icon from " + iconName);
+	                }
                 }
-                
-                label.setImage(image);
+
                 if (tooltip != null)
                     label.setToolTipText(escape(tooltip));
                 else

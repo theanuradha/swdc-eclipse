@@ -298,13 +298,18 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 	        
 	        SoftwareCoLogger.info("Software.com: Copy+Paste incremented");
         } else if (numKeystrokes < 0) {
+        		int deleteKpm = Math.abs(numKeystrokes);
         		// It's a character delete event
-	        updateFileInfoValue(fileInfo, fileName, "delete", Math.abs(numKeystrokes));
+	        updateFileInfoValue(fileInfo, fileName, "delete", deleteKpm);
+	        
+		     // increment the data keystroke count
+			int incrementedCount = Integer.parseInt(keystrokeCount.getData()) + deleteKpm;
+			keystrokeCount.setData( String.valueOf(incrementedCount) );
 	        
 	        SoftwareCoLogger.info("Software.com: Delete incremented");
         } else if (numKeystrokes == 1) {
         		// increment the specific file keystroke value
-	        updateFileInfoValue(fileInfo, fileName, "keys", 1);
+	        updateFileInfoValue(fileInfo, fileName, "add", 1);
 			
 			// increment the data keystroke count
 			int incrementedCount = Integer.parseInt(keystrokeCount.getData()) + 1;
@@ -323,6 +328,16 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 		JsonPrimitive keysVal = fileInfo.getAsJsonPrimitive(key);
         int totalVal = keysVal.getAsInt() + incrementVal;
         fileInfo.addProperty(key, totalVal);
+        
+        if (key.equals("add") || key.equals("delete")) {
+        		// update the netkeys and the keys
+            // "netkeys" = add - delete
+            // "keys" = add + delete
+        		int addVal = fileInfo.get("add").getAsInt();
+        		int deleteVal = fileInfo.get("delete").getAsInt();
+        		fileInfo.addProperty("netkeys", (addVal - deleteVal));
+        		fileInfo.addProperty("keys", (addVal + deleteVal));
+        }
 	}
 	
 	public static void initializeKeystrokeObjectGraph(String projectName, String fileName) {

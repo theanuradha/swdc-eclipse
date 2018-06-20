@@ -25,7 +25,7 @@ public class SoftwareCoKeystrokeCount {
 	private long start;
 	private long end;
 	private SoftwareCoProject project;
-	private String version = "0.1.0";
+	private String version = "0.1.7";
 	
 	public SoftwareCoKeystrokeCount() {
 		this.start = Math.round(System.currentTimeMillis() / 1000);
@@ -52,11 +52,16 @@ public class SoftwareCoKeystrokeCount {
 		// create one and return the one just created
 		JsonObject fileInfoData = new JsonObject();
 		fileInfoData.addProperty("keys", 0);
+		fileInfoData.addProperty("add", 0);
         fileInfoData.addProperty("paste", 0);
         fileInfoData.addProperty("open", 0);
         fileInfoData.addProperty("close", 0);
         fileInfoData.addProperty("delete", 0);
         fileInfoData.addProperty("length", 0);
+        fileInfoData.addProperty("line", 0);
+        fileInfoData.addProperty("linesAdded", 0);
+        fileInfoData.addProperty("linesRemoved", 0);
+        fileInfoData.addProperty("syntax", "");
         source.add(fileName, fileInfoData);
         
         return fileInfoData;
@@ -74,7 +79,7 @@ public class SoftwareCoKeystrokeCount {
 		for ( Entry<String, JsonElement> fileInfoData : fileInfoDataSet ) {
 			JsonObject fileinfoDataJsonObj = (JsonObject) fileInfoData.getValue();
 			// go through all of the different types of event vals and check if we have an incremented value
-			if (this.hasValueDataForProperty(fileinfoDataJsonObj, "keys") ||
+			if (this.hasValueDataForProperty(fileinfoDataJsonObj, "add") ||
 					this.hasValueDataForProperty(fileinfoDataJsonObj, "open") ||
 					this.hasValueDataForProperty(fileinfoDataJsonObj, "close") ||
 					this.hasValueDataForProperty(fileinfoDataJsonObj, "paste") ||
