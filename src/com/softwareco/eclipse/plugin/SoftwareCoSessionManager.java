@@ -114,7 +114,7 @@ public class SoftwareCoSessionManager {
 	    }
 	    if (!isOk) {
 	    		// update the status bar with Sign Up message
-	    		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to sign in to Software.com", "pulse");
+	    		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to sign in to Software.com", "ionicons_svg_md-alert");
 	    }
 	    return isOk;
 	}
@@ -273,7 +273,7 @@ public class SoftwareCoSessionManager {
 						String token = SoftwareCoUtils.generateToken();
 						setItem("token", token);
 						// launch the browser with the login view
-						launchWebUrl(SoftwareCoUtils.launch_url + "/login?token=" + token);
+						launchWebUrl(SoftwareCoUtils.launch_url + "/onboarding?token=" + token);
 						
 					}
 					
@@ -283,8 +283,8 @@ public class SoftwareCoSessionManager {
 	        
 		}
 		
-		if (!authenticated) {
-			SoftwareCoUtils.setStatusLineMessage("Software.com", msg, "alert");
+		if (!authenticated || jwtToken == null) {
+			SoftwareCoUtils.setStatusLineMessage("Software.com", msg, "ionicons_svg_md-alert");
 			
 			// checkTokenAvailability
 			new Thread(() -> {
@@ -369,10 +369,10 @@ public class SoftwareCoSessionManager {
                 sessionTime = totalMin + " min";
             }
             if (avgKpm > 0 || totalMin > 0) {
-            		String icon = (inFlow) ? "rocket" : "flame";
+            		String icon = (inFlow) ? "ionicons_svg_md-rocket" : "";
             		SoftwareCoUtils.setStatusLineMessage(avgKpm + " KPM, " + sessionTime, "Click to see more from Software.com", icon);
             } else {
-            		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to see more from Software.com", "pulse");
+            		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to see more from Software.com", "");
             }
 		}
 	}

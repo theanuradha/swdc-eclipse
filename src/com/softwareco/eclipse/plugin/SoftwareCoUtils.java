@@ -180,23 +180,28 @@ public class SoftwareCoUtils {
 					}
 					
 					// create the custom item
-					com.softwareco.eclipse.plugin.StatusLineContributionItem myItem =
-							new com.softwareco.eclipse.plugin.StatusLineContributionItem(
+					com.softwareco.eclipse.plugin.StatusLineContributionItem myItem = null;
+					
+					if (iconName != null && !iconName.equals("")) {
+						myItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
 									"software.com",
 									iconName);
+					} else {
+						myItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
+								"software.com");
+					}
 					
 					Listener listener = new Listener() {
 						
 						@Override
 						public void handleEvent(Event event) {
-							SoftwareCoLogger.info("Event clicked + " + event.toString() + ".");
 							String existingJwt = SoftwareCoSessionManager.getItem("jwt");
 							
 							String url = SoftwareCoUtils.launch_url;
 							if (existingJwt == null) {
 								String token = generateToken();
 								SoftwareCoSessionManager.setItem("token", token);
-								url += "/login?token=" + token;
+								url += "/onboarding?token=" + token;
 							}
 							
 							try {
