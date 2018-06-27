@@ -2,7 +2,7 @@
 <feature
       id="com.software.eclipse.plugin"
       label="Software.com"
-      version="0.1.8"
+      version="0.1.9"
       provider-name="Software.com">
 
    <description url="http://www.example.com/description">

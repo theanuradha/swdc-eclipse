@@ -114,7 +114,7 @@ public class SoftwareCoSessionManager {
 	    }
 	    if (!isOk) {
 	    		// update the status bar with Sign Up message
-	    		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to sign in to Software.com", "ionicons_svg_md-alert");
+	    		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to log in to Software.com", "ionicons_svg_md-alert");
 	    }
 	    return isOk;
 	}
@@ -243,7 +243,7 @@ public class SoftwareCoSessionManager {
 		boolean pastThresholdTime = isPastTimeThreshold();
 		String jwtToken = getItem("jwt");
 		
-		String msg = "To see your coding data in Software.com, please sign in to your account.";
+		String msg = "To see your coding data in Software.com, please log in to your account.";
 		if (isOnline && !authenticated && pastThresholdTime && !confirmWindowOpen && jwtToken == null) {
 	        // set the last update time so we don't try to ask too frequently
 	        setItem("eclipse_lastUpdateTime", String.valueOf(System.currentTimeMillis()));
@@ -289,7 +289,7 @@ public class SoftwareCoSessionManager {
 			// checkTokenAvailability
 			new Thread(() -> {
 		        try {
-		            Thread.sleep(1000 * 60);
+		            Thread.sleep(1000 * 120);
 		            checkTokenAvailability();
 		        }
 		        catch (Exception e){

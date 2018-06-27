@@ -41,9 +41,6 @@ public class SoftwareCoUtils {
 	private final static String PROD_API_ENDPOINT = "https://api.software.com";
 	private final static String PROD_URL_ENDPOINT = "https://alpha.software.com";
 
-	private final static String LOCAL_API_ENDPOINT = "https://localhost:5000";
-	private final static String LOCAL_URL_ENDPOINT = "https://localhost:3000";
-
 	// set the api endpoint to use
 	public final static String api_endpoint = PROD_API_ENDPOINT;
 	// set the launch url to use
