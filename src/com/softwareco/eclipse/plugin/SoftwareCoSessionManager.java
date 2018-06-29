@@ -270,8 +270,11 @@ public class SoftwareCoSessionManager {
 					
 					if (selectedButtonIdx == 1) {
 						// create the token value
-						String token = SoftwareCoUtils.generateToken();
-						setItem("token", token);
+						String token = getItem("token");
+						if (token == null || token.equals("")) {
+							token = SoftwareCoUtils.generateToken();
+							setItem("token", token);
+						}
 						// launch the browser with the login view
 						launchWebUrl(SoftwareCoUtils.launch_url + "/onboarding?token=" + token);
 						

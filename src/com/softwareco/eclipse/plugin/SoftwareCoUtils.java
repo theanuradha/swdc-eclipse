@@ -196,8 +196,11 @@ public class SoftwareCoUtils {
 							
 							String url = SoftwareCoUtils.launch_url;
 							if (existingJwt == null) {
-								String token = generateToken();
-								SoftwareCoSessionManager.setItem("token", token);
+								String token = SoftwareCoSessionManager.getItem("token");
+								if (token == null || token.equals("")) {
+									token = SoftwareCoUtils.generateToken();
+									SoftwareCoSessionManager.setItem("token", token);
+								}
 								url += "/onboarding?token=" + token;
 							}
 							
