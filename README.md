@@ -8,6 +8,8 @@
 
 *Software* is installed and uninstalled via the Eclipse marketplace.
 
+<!--- Begin: setup --->
+
 ### Install
 
 1. Navigate to **Help** > **Eclipse Marketplace**
@@ -21,6 +23,8 @@
 1. Navigate to **Help** > **About**
 2. Click on **Installation Details** 
 3. **Uninstall** *Software*
+
+<!--- End: setup --->
 
 ## Privacy
 
