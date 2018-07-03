@@ -4,7 +4,11 @@
  */
 package com.softwareco.eclipse.plugin;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -237,7 +241,7 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 		SoftwareCoKeystrokeCount keystrokeCount = keystrokeMgr.getKeystrokeCount(projectName);
 		JsonObject fileInfo = keystrokeCount.getFileInfo(fileName);
 		
-		updateFileInfoValue(fileInfo, fileName, "open", 1);
+		updateFileInfoValue(fileInfo, "open", 1);
 		
 		SoftwareCoLogger.info("Software.com: file opened: " + fileName);
 	}
@@ -253,10 +257,20 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 		SoftwareCoKeystrokeCount keystrokeCount = keystrokeMgr.getKeystrokeCount(projectName);
 		JsonObject fileInfo = keystrokeCount.getFileInfo(fileName);
 		
-		updateFileInfoValue(fileInfo, fileName, "close", 1);
+		updateFileInfoValue(fileInfo, "close", 1);
 		
 		SoftwareCoLogger.info("Software.com: file closed: " + fileName);
 	}
+	
+	protected static int getLineCount(String fileName) {
+        Path path = Paths.get(fileName);
+        try {
+            return (int) Files.lines(path).count();
+        } catch (IOException e) {
+        		SoftwareCoLogger.info("Software.com: failed to get the line count for file " + fileName);
+            return 0;
+        }
+    }
 
 	/**
 	 * Take the changed document metadata and process them.
@@ -269,19 +283,10 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 		// for character deletion, single or bulk deletion
 		//
 		int numKeystrokes = docEvent.getLength();
-
-		//
-		// get keystroke count from docEvent if getLength() return zero
-		//
-		if ( numKeystrokes == 0 ) {
-			//
-			// This means we had a copy and paste or it was normal kpm addition
-			// Count the number of characters in the text attribute
-			//
-			numKeystrokes = ( docEvent.getText() != null ) ? docEvent.getText().length() : 0;
-		} else {
-			// make it negative since it's character deletion
-			numKeystrokes = numKeystrokes / -1;
+		
+		boolean isNewLine = false;
+		if (docEvent.getText().matches("\n") || docEvent.getText().matches("\r\n")) {
+			isNewLine = true;
 		}
 		
 		String fileName = getCurrentFileName();
@@ -291,43 +296,85 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 		
 		SoftwareCoKeystrokeCount keystrokeCount = keystrokeMgr.getKeystrokeCount(projectName);
 		JsonObject fileInfo = keystrokeCount.getFileInfo(fileName);
-        
-        if (numKeystrokes > 1) {
-        		// It's a copy and paste event
-	        updateFileInfoValue(fileInfo, fileName, "paste", numKeystrokes);
+
+		if (!isNewLine) {
+			//
+			// get keystroke count from docEvent if getLength() return zero
+			//
+			if ( numKeystrokes == 0 ) {
+				//
+				// This means we had a copy and paste or it was normal kpm addition
+				// Count the number of characters in the text attribute
+				//
+				numKeystrokes = ( docEvent.getText() != null ) ? docEvent.getText().length() : 0;
+			} else {
+				// make it negative since it's character deletion
+				numKeystrokes = numKeystrokes / -1;
+			}
 	        
-	        SoftwareCoLogger.info("Software.com: Copy+Paste incremented");
-        } else if (numKeystrokes < 0) {
-        		int deleteKpm = Math.abs(numKeystrokes);
-        		// It's a character delete event
-	        updateFileInfoValue(fileInfo, fileName, "delete", deleteKpm);
-	        
-		     // increment the data keystroke count
-			int incrementedCount = Integer.parseInt(keystrokeCount.getData()) + deleteKpm;
-			keystrokeCount.setData( String.valueOf(incrementedCount) );
-	        
-	        SoftwareCoLogger.info("Software.com: Delete incremented");
-        } else if (numKeystrokes == 1) {
-        		// increment the specific file keystroke value
-	        updateFileInfoValue(fileInfo, fileName, "add", 1);
-			
-			// increment the data keystroke count
-			int incrementedCount = Integer.parseInt(keystrokeCount.getData()) + 1;
-			keystrokeCount.setData( String.valueOf(incrementedCount) );
-			
-			SoftwareCoLogger.info("Software.com: KPM incremented");
-        }
+	        if (numKeystrokes > 1) {
+	        		// It's a copy and paste event
+		        updateFileInfoValue(fileInfo, "paste", numKeystrokes);
+		        
+		        SoftwareCoLogger.info("Software.com: Copy+Paste incremented");
+	        } else if (numKeystrokes < 0) {
+	        		int deleteKpm = Math.abs(numKeystrokes);
+	        		// It's a character delete event
+		        updateFileInfoValue(fileInfo, "delete", deleteKpm);
+		        
+			     // increment the data keystroke count
+				int incrementedCount = Integer.parseInt(keystrokeCount.getData()) + deleteKpm;
+				keystrokeCount.setData( String.valueOf(incrementedCount) );
+		        
+		        SoftwareCoLogger.info("Software.com: Delete incremented");
+	        } else if (numKeystrokes == 1) {
+	        		// increment the specific file keystroke value
+		        updateFileInfoValue(fileInfo, "add", 1);
+				
+				// increment the data keystroke count
+				int incrementedCount = Integer.parseInt(keystrokeCount.getData()) + 1;
+				keystrokeCount.setData( String.valueOf(incrementedCount) );
+				
+				SoftwareCoLogger.info("Software.com: KPM incremented");
+	        }
+		}
         
         int filelen = (docEvent.getDocument() != null) ? docEvent.getDocument().getLength() : -1;
         if (filelen != -1) {
-        		updateFileInfoValue(fileInfo, fileName, "length", filelen);
+        		updateFileInfoValue(fileInfo, "length", filelen);
         }
+        
+        int lines = getPreviousLineCount(fileInfo);
+        if (lines == -1) {
+        		lines = getLineCount(fileName);
+        }
+        
+        if (isNewLine) {
+        		lines += 1;
+        		// new lines added
+            updateFileInfoValue(fileInfo, "linesAdded", 1);
+            SoftwareCoLogger.info("Software.com: lines added incremented");
+        }
+
+        updateFileInfoValue(fileInfo, "lines", lines);
 	}
 	
-	private static void updateFileInfoValue(JsonObject fileInfo, String fileName, String key, int incrementVal) {
+	private static int getPreviousLineCount(JsonObject fileInfo) {
+        JsonPrimitive keysVal = fileInfo.getAsJsonPrimitive("lines");
+        return keysVal.getAsInt();
+    }
+	
+	private static void updateFileInfoValue(JsonObject fileInfo, String key, int incrementVal) {
 		JsonPrimitive keysVal = fileInfo.getAsJsonPrimitive(key);
-        int totalVal = keysVal.getAsInt() + incrementVal;
-        fileInfo.addProperty(key, totalVal);
+		
+		if (key.equals("length") || key.equals("lines") || key.equals("syntax")) {
+			// it's not additive
+			fileInfo.addProperty(key, incrementVal);
+		} else {
+			// it's additive
+			int totalVal = keysVal.getAsInt() + incrementVal;
+			fileInfo.addProperty(key, totalVal);
+		}
         
         if (key.equals("add") || key.equals("delete")) {
         		// update the netkeys and the keys
