@@ -117,7 +117,7 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 
 				SoftwareCoLogger.debug("Software.com: Loaded v" + VERSION + " on platform: " + SWT.getPlatform());
 				
-				SoftwareCoUtils.setStatusLineMessage("Software.com", "Loaded v" + VERSION, "");
+				SoftwareCoUtils.setStatusLineMessage("Software.com", "", "", "", "Loaded v" + VERSION);
 
 				if ( window.getPartService() == null ) {
 					//
@@ -169,8 +169,6 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 				new Thread(() -> {
 			        try {
 			            Thread.sleep(1000 * 5);
-			            sessionMgr.chekUserAuthenticationStatus();
-			            sessionMgr.fetchDailyKpmSessionInfo();
 			            sessionMgr.sendOfflineData();
 			        }
 			        catch (Exception e){

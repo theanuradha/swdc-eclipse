@@ -8,8 +8,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,7 +27,6 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.StatusLineContributionItem;
 
@@ -45,6 +42,9 @@ public class SoftwareCoUtils {
 	public final static String api_endpoint = PROD_API_ENDPOINT;
 	// set the launch url to use
 	public final static String launch_url = PROD_URL_ENDPOINT;
+	
+	private static final String KPM_ITEM_ID = "software.kpm.item";
+	private static final String SESSION_ITEM_ID = "softare.session.item";
 
 	public static ExecutorService executorService;
 	public static HttpClient httpClient;
@@ -129,26 +129,16 @@ public class SoftwareCoUtils {
 	}
 	
 	public static void logApiRequest(HttpUriRequest req, String payload) {
-		
-//		String headers = "";
-//		StringBuffer sb = new StringBuffer();
-//		if (req.getAllHeaders() != null) {
-//			for (Header header : req.getAllHeaders()) {
-//				sb.append(header.getName()).append("=").append(header.getValue());
-//				sb.append(",");
-//			}
-//		}
-//		if (sb.length() > 0) {
-//			headers = sb.toString();
-//			headers = "{" + headers.substring(0, headers.lastIndexOf(",")) + "}";
-//		}
-		
+		String jwt = SoftwareCoSessionManager.getItem("jwt");
 		SoftwareCoLogger.info("Software.com: executing request "
 				+ "[method: " + req.getMethod() + ", URI: " + req.getURI()
-				+ ", payload: " + payload + "]");
+				+ ", payload: " + payload + ", jwt: " + jwt + "]");
 	}
 	
-	public static void setStatusLineMessage(final String msg, final String tooltip, final String iconName) {
+	public static void setStatusLineMessage(
+			final String kpmText, final String kpmIcon,
+			final String sessionText, final String sessionIcon,
+			final String tooltip) {
 		final IWorkbench workbench = PlatformUI.getWorkbench();
 
 		workbench.getDisplay().asyncExec(new Runnable() {
@@ -171,52 +161,39 @@ public class SoftwareCoUtils {
 					SoftwareCoLogger.error("Unable to obtain status line manager.", e);
 				}
 				if (statusLineManager != null) {
-					IContributionItem contributeItem = statusLineManager.find("software.com");
+					// remove the kpm item
+					IContributionItem contributeItem = statusLineManager.find(KPM_ITEM_ID);
+					if (contributeItem != null) {
+						statusLineManager.remove(contributeItem);
+					}
+					// remove the session item
+					contributeItem = statusLineManager.find(SESSION_ITEM_ID);
 					if (contributeItem != null) {
 						statusLineManager.remove(contributeItem);
 					}
 					
 					// create the custom item
-					com.softwareco.eclipse.plugin.StatusLineContributionItem myItem = null;
+					com.softwareco.eclipse.plugin.StatusLineContributionItem kpmItem = null;
 					
-					if (iconName != null && !iconName.equals("")) {
-						myItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
-									"software.com",
-									iconName);
+					if (kpmIcon != null && !kpmIcon.equals("")) {
+						kpmItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
+								KPM_ITEM_ID, kpmIcon);
 					} else {
-						myItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
-								"software.com");
+						kpmItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
+								KPM_ITEM_ID);
 					}
 					
 					Listener listener = new Listener() {
-						
 						@Override
 						public void handleEvent(Event event) {
-							String existingJwt = SoftwareCoSessionManager.getItem("jwt");
-							
-							String url = SoftwareCoUtils.launch_url;
-							if (existingJwt == null) {
-								String token = SoftwareCoSessionManager.getItem("token");
-								if (token == null || token.equals("")) {
-									token = SoftwareCoUtils.generateToken();
-									SoftwareCoSessionManager.setItem("token", token);
-								}
-								url += "/onboarding?token=" + token;
-							}
-							
-							try {
-								PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(url));
-							} catch (PartInitException | MalformedURLException e) {
-								SoftwareCoLogger.error("Failed to launch the url: " + url, e);
-							}
-							
+							SoftwareCoSessionManager.launchDashboard();
 						}
 					};
-					myItem.addClickListener(listener);
+					kpmItem.addClickListener(listener);
 					
-					myItem.setText(msg);
-					myItem.setToolTipText(tooltip);
-					myItem.setVisible(true);
+					kpmItem.setText(kpmText);
+					kpmItem.setToolTipText(tooltip);
+					kpmItem.setVisible(true);
 
 					String firstContribItem = null;
 					for (IContributionItem contribItem : statusLineManager.getItems()) {
@@ -226,10 +203,35 @@ public class SoftwareCoUtils {
 							}
 						}
 					}
+					boolean addedToFirstContrib = false;
 					if (firstContribItem != null) {
-						statusLineManager.insertBefore(firstContribItem, myItem);
+						statusLineManager.insertBefore(firstContribItem, kpmItem);
+						addedToFirstContrib = true;
 					} else {
-						statusLineManager.add(myItem);
+						statusLineManager.add(kpmItem);
+					}
+					
+					if (sessionText != null && !sessionText.equals("")) {
+						// make the session item contribution item
+						com.softwareco.eclipse.plugin.StatusLineContributionItem sessionItem = null;
+						
+						if (sessionIcon != null && !sessionIcon.equals("")) {
+							sessionItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
+									SESSION_ITEM_ID, sessionIcon);
+						} else {
+							sessionItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
+									SESSION_ITEM_ID);
+						}
+						sessionItem.addClickListener(listener);
+						sessionItem.setText(sessionText);
+						sessionItem.setToolTipText(tooltip);
+						sessionItem.setVisible(true);
+						
+						if (!addedToFirstContrib) {
+							statusLineManager.add(sessionItem);
+						} else {
+							statusLineManager.insertBefore(firstContribItem, sessionItem);
+						}
 					}
 					
 					// show the item right away

@@ -114,7 +114,7 @@ public class SoftwareCoSessionManager {
 	    }
 	    if (!isOk) {
 	    		// update the status bar with Sign Up message
-	    		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to log in to Software.com", "ionicons_svg_md-alert");
+	    		SoftwareCoUtils.setStatusLineMessage("Software.com", "alert_light", "", "", "Click to log in to Software.com");
 	    }
 	    return isOk;
 	}
@@ -270,14 +270,7 @@ public class SoftwareCoSessionManager {
 					
 					if (selectedButtonIdx == 1) {
 						// create the token value
-						String token = getItem("token");
-						if (token == null || token.equals("")) {
-							token = SoftwareCoUtils.generateToken();
-							setItem("token", token);
-						}
-						// launch the browser with the login view
-						launchWebUrl(SoftwareCoUtils.launch_url + "/onboarding?token=" + token);
-						
+						launchDashboard();
 					}
 					
 					confirmWindowOpen = false;
@@ -287,18 +280,7 @@ public class SoftwareCoSessionManager {
 		}
 		
 		if (!authenticated || jwtToken == null) {
-			SoftwareCoUtils.setStatusLineMessage("Software.com", msg, "ionicons_svg_md-alert");
-			
-			// checkTokenAvailability
-			new Thread(() -> {
-		        try {
-		            Thread.sleep(1000 * 120);
-		            checkTokenAvailability();
-		        }
-		        catch (Exception e){
-		            System.err.println(e);
-		        }
-		    }).start();
+			SoftwareCoUtils.setStatusLineMessage("Software.com", "alert_light", "", "", msg);
 		}
 	}
 
@@ -330,7 +312,7 @@ public class SoftwareCoSessionManager {
 			setItem("user", responseData.get("user").getAsString());
 			setItem("eclipse_lastUpdateTime", String.valueOf(System.currentTimeMillis()));
 		} else {
-			// check again in a minute
+			// check again in 2 minutes
 			new Thread(() -> {
 		        try {
 		            Thread.sleep(1000 * 120);
@@ -344,10 +326,6 @@ public class SoftwareCoSessionManager {
 	}
 	
 	public void fetchDailyKpmSessionInfo() {
-		if (!isAuthenticated()) {
-	        SoftwareCoLogger.info("Software.com: Not authenticated to fetch KPM info, trying again later");
-	        return;
-	    }
 		long fromSeconds = Math.round(System.currentTimeMillis() / 1000);
 		// make an async call to get the kpm info
 		JsonObject jsonObj = SoftwareCoUtils.getResponseInfo(
@@ -356,6 +334,22 @@ public class SoftwareCoSessionManager {
 			boolean inFlow = true;
 			if (jsonObj.has("inFlow")) {
 				inFlow = jsonObj.get("inFlow").getAsBoolean();
+			}
+			String sessionTimeIcon = "";
+			float sessionMinGoalPercent = 0;
+			if (jsonObj.has("sessionMinGoalPercent")) {
+				sessionMinGoalPercent = jsonObj.get("sessionMinGoalPercent").getAsFloat();
+				if (sessionMinGoalPercent > 0) {
+					if (sessionMinGoalPercent < 0.45) {
+                        sessionTimeIcon = "25_circle_light";
+                    } else if (sessionMinGoalPercent < 0.70) {
+                        sessionTimeIcon = "50_circle_light";
+                    } else if (sessionMinGoalPercent < 0.95) {
+                        sessionTimeIcon = "75_circle_light";
+                    } else {
+                        sessionTimeIcon = "100_circle_light";
+                    }
+				}
 			}
 			int avgKpm = 0;
 			if (jsonObj.has("kpm")) {
@@ -376,15 +370,47 @@ public class SoftwareCoSessionManager {
                 sessionTime = totalMin + " min";
             }
             if (avgKpm > 0 || totalMin > 0) {
-            		String icon = (inFlow) ? "ionicons_svg_md-rocket" : "";
-            		SoftwareCoUtils.setStatusLineMessage(avgKpm + " KPM, " + sessionTime, "Click to see more from Software.com", icon);
+            	String iconName = (inFlow) ? "rocket_light" : "";
+                String kpmStr = String.valueOf(avgKpm) + " KPM";
+                SoftwareCoUtils.setStatusLineMessage(kpmStr, iconName,
+                        sessionTime, sessionTimeIcon,
+                        "Click to see more from Software.com");
             } else {
-            		SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to see more from Software.com", "");
+            	SoftwareCoUtils.setStatusLineMessage("Software.com", "", "", "", "Click to see more from Software.com");
             }
 		}
 	}
 	
-	private void launchWebUrl(String url) {
+	public static void launchDashboard() {
+		
+		String url = SoftwareCoUtils.launch_url;
+		
+		// create the token value
+		String token = getItem("token");
+		String jwt = getItem("jwt");
+		boolean addToken = false;
+		if (token == null || token.equals("")) {
+			token = SoftwareCoUtils.generateToken();
+			setItem("token", token);
+			addToken = true;
+		} else if (jwt == null || jwt.equals("")) {
+			addToken = true;
+		}
+		if (addToken) {
+			url += "/onboarding?token=" + token;
+			
+			// checkTokenAvailability in a minute
+			new Thread(() -> {
+		        try {
+		            Thread.sleep(1000 * 60);
+		            checkTokenAvailability();
+		        }
+		        catch (Exception e){
+		            System.err.println(e);
+		        }
+		    }).start();
+		}
+		
 		try {
 			PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(url));
 		} catch (PartInitException | MalformedURLException e) {
