@@ -92,11 +92,6 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 
 		editorListener = new SoftwareCoFileEditorListener();
 	}
-	
-//	@Override
-//	protected void initializeImageRegistry(final ImageRegistry reg) {
-//	    reg.put(IMAGE_PATH, imageDescriptorFromPlugin(PLUGIN_ID, IMAGE_PATH));
-//	}
 
 	/**
 	 * This will initialize the file editor listener to any already open file and perform
@@ -117,7 +112,7 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 
 				SoftwareCoLogger.debug("Software.com: Loaded v" + VERSION + " on platform: " + SWT.getPlatform());
 				
-				SoftwareCoUtils.setStatusLineMessage("Software.com", "", "", "", "Loaded v" + VERSION);
+				SoftwareCoUtils.setStatusLineMessage("Software.com", "Loaded v" + VERSION);
 
 				if ( window.getPartService() == null ) {
 					//

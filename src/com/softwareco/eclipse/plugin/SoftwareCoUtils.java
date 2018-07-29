@@ -34,7 +34,6 @@ import com.google.gson.JsonObject;
 
 public class SoftwareCoUtils {
 
-	// public final static String PLUGIN_MGR_ENDPOINT = "http://localhost:19234/api/v1/data";
 	private final static String PROD_API_ENDPOINT = "https://api.software.com";
 	private final static String PROD_URL_ENDPOINT = "https://app.software.com";
 
@@ -44,7 +43,6 @@ public class SoftwareCoUtils {
 	public final static String launch_url = PROD_URL_ENDPOINT;
 	
 	private static final String KPM_ITEM_ID = "software.kpm.item";
-	private static final String SESSION_ITEM_ID = "softare.session.item";
 
 	public static ExecutorService executorService;
 	public static HttpClient httpClient;
@@ -136,8 +134,7 @@ public class SoftwareCoUtils {
 	}
 	
 	public static void setStatusLineMessage(
-			final String kpmText, final String kpmIcon,
-			final String sessionText, final String sessionIcon,
+			final String statusMsg,
 			final String tooltip) {
 		final IWorkbench workbench = PlatformUI.getWorkbench();
 
@@ -161,13 +158,8 @@ public class SoftwareCoUtils {
 					SoftwareCoLogger.error("Unable to obtain status line manager.", e);
 				}
 				if (statusLineManager != null) {
-					// remove the kpm item
+					// remove the status kpm item
 					IContributionItem contributeItem = statusLineManager.find(KPM_ITEM_ID);
-					if (contributeItem != null) {
-						statusLineManager.remove(contributeItem);
-					}
-					// remove the session item
-					contributeItem = statusLineManager.find(SESSION_ITEM_ID);
 					if (contributeItem != null) {
 						statusLineManager.remove(contributeItem);
 					}
@@ -175,13 +167,8 @@ public class SoftwareCoUtils {
 					// create the custom item
 					com.softwareco.eclipse.plugin.StatusLineContributionItem kpmItem = null;
 					
-					if (kpmIcon != null && !kpmIcon.equals("")) {
-						kpmItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
-								KPM_ITEM_ID, kpmIcon);
-					} else {
-						kpmItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
+					kpmItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
 								KPM_ITEM_ID);
-					}
 					
 					Listener listener = new Listener() {
 						@Override
@@ -191,7 +178,7 @@ public class SoftwareCoUtils {
 					};
 					kpmItem.addClickListener(listener);
 					
-					kpmItem.setText(kpmText);
+					kpmItem.setText(statusMsg);
 					kpmItem.setToolTipText(tooltip);
 					kpmItem.setVisible(true);
 
@@ -203,36 +190,12 @@ public class SoftwareCoUtils {
 							}
 						}
 					}
-					boolean addedToFirstContrib = false;
 					if (firstContribItem != null) {
 						statusLineManager.insertBefore(firstContribItem, kpmItem);
-						addedToFirstContrib = true;
 					} else {
 						statusLineManager.add(kpmItem);
 					}
-					
-					if (sessionText != null && !sessionText.equals("")) {
-						// make the session item contribution item
-						com.softwareco.eclipse.plugin.StatusLineContributionItem sessionItem = null;
-						
-						if (sessionIcon != null && !sessionIcon.equals("")) {
-							sessionItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
-									SESSION_ITEM_ID, sessionIcon);
-						} else {
-							sessionItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
-									SESSION_ITEM_ID);
-						}
-						sessionItem.addClickListener(listener);
-						sessionItem.setText(sessionText);
-						sessionItem.setToolTipText(tooltip);
-						sessionItem.setVisible(true);
-						
-						if (!addedToFirstContrib) {
-							statusLineManager.add(sessionItem);
-						} else {
-							statusLineManager.insertBefore(firstContribItem, sessionItem);
-						}
-					}
+
 					
 					// show the item right away
 					statusLineManager.markDirty();

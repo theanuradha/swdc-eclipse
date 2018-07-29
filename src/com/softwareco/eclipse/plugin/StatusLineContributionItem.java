@@ -170,7 +170,6 @@ public class StatusLineContributionItem extends ContributionItem {
                 
                 if (iconName != null) {
 	                ImageDescriptor imgDescriptor = SoftwareCo.getImageDescriptor("assets/" + iconName + ".gif");
-	                // i.e. URLImageDescriptor(platform:/plugin/com.software.eclipse.plugin/assets/ionicons_svg_md-alert.gif)
 	                try {
 	                		image = imgDescriptor.createImage(display);
 	                		label.setImage(image);

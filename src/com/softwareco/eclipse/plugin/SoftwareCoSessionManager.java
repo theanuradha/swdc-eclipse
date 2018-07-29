@@ -46,7 +46,7 @@ public class SoftwareCoSessionManager {
 	
 	private boolean confirmWindowOpen = false;
 	
-	private long lastTimeAuthenticated = 0;
+	private static long lastTimeAuthenticated = 0;
 	
 	public static SoftwareCoSessionManager getInstance() {
 		if (instance == null) {
@@ -96,25 +96,25 @@ public class SoftwareCoSessionManager {
 	 * User session will have...
 	 * { user: user, jwt: jwt }
 	 */
-	private boolean isAuthenticated() {
+	private static boolean isAuthenticated() {
 	    String tokenVal = getItem("token");
 	    if (tokenVal == null) {
 	        return false;
 	    }
 	    
 	    if (lastTimeAuthenticated > 0 && System.currentTimeMillis() - lastTimeAuthenticated < 10000) {
-	    		return true;
+	    	return true;
 	    }
 	    
 	    boolean isOk = SoftwareCoUtils.getResponseInfo(makeApiCall("/users/ping/", false, null)).isOk;
 	    if (!isOk) {
-	    		lastTimeAuthenticated = -1;
+	    	lastTimeAuthenticated = -1;
 	    } else {
-	    		lastTimeAuthenticated = System.currentTimeMillis();
+	    	lastTimeAuthenticated = System.currentTimeMillis();
 	    }
 	    if (!isOk) {
-	    		// update the status bar with Sign Up message
-	    		SoftwareCoUtils.setStatusLineMessage("Software.com", "alert_light", "", "", "Click to log in to Software.com");
+	    	// update the status bar with Sign Up message
+	    	SoftwareCoUtils.setStatusLineMessage("⚠️Software.com", "Click to log in to Software.com");
 	    }
 	    return isOk;
 	}
@@ -261,7 +261,7 @@ public class SoftwareCoSessionManager {
 							null, // dialogTitleImage
 							dialogMsg, // dialogMessage
 							MessageDialog.INFORMATION, // dialogImageType
-							new String[] { "Not now", "Authenticate" }, // dialogButtonLabels
+							new String[] { "Not now", "Log In" }, // dialogButtonLabels
 							1 // defaultIndex
 					);
 					// waits until the user has closed the dialog and returns the dialog's return code
@@ -280,7 +280,7 @@ public class SoftwareCoSessionManager {
 		}
 		
 		if (!authenticated || jwtToken == null) {
-			SoftwareCoUtils.setStatusLineMessage("Software.com", "alert_light", "", "", msg);
+			SoftwareCoUtils.setStatusLineMessage("⚠️Software.com", msg);
 		}
 	}
 
@@ -341,13 +341,13 @@ public class SoftwareCoSessionManager {
 				sessionMinGoalPercent = jsonObj.get("sessionMinGoalPercent").getAsFloat();
 				if (sessionMinGoalPercent > 0) {
 					if (sessionMinGoalPercent < 0.45) {
-                        sessionTimeIcon = "25_circle_light";
+                        sessionTimeIcon = "❍";
                     } else if (sessionMinGoalPercent < 0.70) {
-                        sessionTimeIcon = "50_circle_light";
+                        sessionTimeIcon = "◒";
                     } else if (sessionMinGoalPercent < 0.95) {
-                        sessionTimeIcon = "75_circle_light";
+                        sessionTimeIcon = "◍";
                     } else {
-                        sessionTimeIcon = "100_circle_light";
+                        sessionTimeIcon = "●";
                     }
 				}
 			}
@@ -370,14 +370,18 @@ public class SoftwareCoSessionManager {
                 sessionTime = totalMin + " min";
             }
             if (avgKpm > 0 || totalMin > 0) {
-            	String iconName = (inFlow) ? "rocket_light" : "";
-                String kpmStr = String.valueOf(avgKpm) + " KPM";
-                SoftwareCoUtils.setStatusLineMessage(kpmStr, iconName,
-                        sessionTime, sessionTimeIcon,
+            	String sessionMsg = (sessionTime.equals("")) ? sessionTime : sessionTimeIcon + " " + sessionTime;
+            	String statusMsg = String.valueOf(avgKpm) + " KPM, " + sessionMsg;
+            	if (inFlow) {
+            		statusMsg = "🚀" + " " + statusMsg;
+            	}
+                SoftwareCoUtils.setStatusLineMessage(statusMsg,
                         "Click to see more from Software.com");
             } else {
-            	SoftwareCoUtils.setStatusLineMessage("Software.com", "", "", "", "Click to see more from Software.com");
+            	SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to see more from Software.com");
             }
+		} else {
+			SoftwareCoUtils.setStatusLineMessage("⚠️Software.com", "Click to log in to Software.com");
 		}
 	}
 	
@@ -393,7 +397,7 @@ public class SoftwareCoSessionManager {
 			token = SoftwareCoUtils.generateToken();
 			setItem("token", token);
 			addToken = true;
-		} else if (jwt == null || jwt.equals("")) {
+		} else if (jwt == null || jwt.equals("") || !isAuthenticated()) {
 			addToken = true;
 		}
 		if (addToken) {
