@@ -336,42 +336,42 @@ public class SoftwareCoSessionManager {
 				inFlow = jsonObj.get("inFlow").getAsBoolean();
 			}
 			String sessionTimeIcon = "";
-			float sessionMinGoalPercent = 0;
-			if (jsonObj.has("sessionMinGoalPercent")) {
-				sessionMinGoalPercent = jsonObj.get("sessionMinGoalPercent").getAsFloat();
-				if (sessionMinGoalPercent > 0) {
-					if (sessionMinGoalPercent < 0.45) {
+			float currentSessionGoalPercent = 0;
+			if (jsonObj.has("currentSessionGoalPercent")) {
+				currentSessionGoalPercent = jsonObj.get("currentSessionGoalPercent").getAsFloat();
+				if (currentSessionGoalPercent > 0) {
+					if (currentSessionGoalPercent < 0.45) {
                         sessionTimeIcon = "❍";
-                    } else if (sessionMinGoalPercent < 0.70) {
+                    } else if (currentSessionGoalPercent < 0.70) {
                         sessionTimeIcon = "◒";
-                    } else if (sessionMinGoalPercent < 0.95) {
+                    } else if (currentSessionGoalPercent < 0.95) {
                         sessionTimeIcon = "◍";
                     } else {
                         sessionTimeIcon = "●";
                     }
 				}
 			}
-			int avgKpm = 0;
-			if (jsonObj.has("kpm")) {
-				avgKpm = jsonObj.get("kpm").getAsInt();
+			int currentSessionKpm = 0;
+			if (jsonObj.has("currentSessionKpm")) {
+				currentSessionKpm = jsonObj.get("currentSessionKpm").getAsInt();
 			}
-			long totalMin = 0;
-			if (jsonObj.has("minutesTotal")) {
-				totalMin = jsonObj.get("minutesTotal").getAsLong();
+			long currentSessionMinutes = 0;
+			if (jsonObj.has("currentSessionMinutes")) {
+				currentSessionMinutes = jsonObj.get("currentSessionMinutes").getAsLong();
 			}
             String sessionTime = "";
-            if (totalMin == 60) {
+            if (currentSessionMinutes == 60) {
                 sessionTime = "1 hr";
-            } else if (totalMin > 60) {
-            		sessionTime =  String.format("%.2f", (totalMin / 60)) + " hrs";
-            } else if (totalMin == 1) {
+            } else if (currentSessionMinutes > 60) {
+            		sessionTime =  String.format("%.2f", (currentSessionMinutes / 60)) + " hrs";
+            } else if (currentSessionMinutes == 1) {
                 sessionTime = "1 min";
             } else {
-                sessionTime = totalMin + " min";
+                sessionTime = currentSessionMinutes + " min";
             }
-            if (avgKpm > 0 || totalMin > 0) {
+            if (currentSessionKpm > 0 || currentSessionMinutes > 0) {
             	String sessionMsg = (sessionTime.equals("")) ? sessionTime : sessionTimeIcon + " " + sessionTime;
-            	String statusMsg = String.valueOf(avgKpm) + " KPM, " + sessionMsg;
+            	String statusMsg = String.valueOf(currentSessionKpm) + " KPM, " + sessionMsg;
             	if (inFlow) {
             		statusMsg = "🚀" + " " + statusMsg;
             	}
