@@ -289,6 +289,12 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 		
 		SoftwareCoKeystrokeCount keystrokeCount = keystrokeMgr.getKeystrokeCount(projectName);
 		JsonObject fileInfo = keystrokeCount.getFileInfo(fileName);
+		
+		String currentTrack = SoftwareCoUtils.getCurrentMusicTrack();
+        String trackInfo = fileInfo.get("trackInfo").getAsString();
+        if ((trackInfo == null || trackInfo.equals("")) && (currentTrack != null && !currentTrack.equals(""))) {
+            updateFileInfoStringValue(fileInfo, "trackInfo", currentTrack);
+        }
 
 		if (!isNewLine) {
 			//
@@ -357,10 +363,14 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
         return keysVal.getAsInt();
     }
 	
+	private static void updateFileInfoStringValue(JsonObject fileInfo, String key, String value) {
+		fileInfo.addProperty(key, value);
+	}
+	
 	private static void updateFileInfoValue(JsonObject fileInfo, String key, int incrementVal) {
 		JsonPrimitive keysVal = fileInfo.getAsJsonPrimitive(key);
 		
-		if (key.equals("length") || key.equals("lines") || key.equals("syntax")) {
+		if (key.equals("length") || key.equals("lines")) {
 			// it's not additive
 			fileInfo.addProperty(key, incrementVal);
 		} else {
@@ -371,8 +381,8 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
         
         if (key.equals("add") || key.equals("delete")) {
         		// update the netkeys and the keys
-            // "netkeys" = add - delete
-            // "keys" = add + delete
+            	// "netkeys" = add - delete
+            	// "keys" = add + delete
         		int addVal = fileInfo.get("add").getAsInt();
         		int deleteVal = fileInfo.get("delete").getAsInt();
         		fileInfo.addProperty("netkeys", (addVal - deleteVal));
