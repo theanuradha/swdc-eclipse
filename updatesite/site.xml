@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/com.software.eclipse.plugin_0.1.17.jar" id="com.software.eclipse.plugin" version="0.1.17">
+   <feature url="features/com.software.eclipse.plugin_0.1.18.jar" id="com.software.eclipse.plugin" version="0.1.18">
       <category name="com.software.eclipse.plugin"/>
    </feature>
    <category-def name="com.software.eclipse.plugin" label="Software.com"/>
