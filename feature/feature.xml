@@ -2,7 +2,7 @@
 <feature
       id="com.software.eclipse.plugin"
       label="Software.com"
-      version="0.1.18"
+      version="0.1.19"
       provider-name="Software.com">
 
    <description url="http://www.example.com/description">
@@ -80,6 +80,13 @@ Reserved.
 
    <plugin
          id="org.eclipse.ui.workbench.texteditor"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.jgit"
          download-size="0"
          install-size="0"
          version="0.0.0"
