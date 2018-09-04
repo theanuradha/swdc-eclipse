@@ -2,7 +2,7 @@
 <feature
       id="com.software.eclipse.plugin"
       label="Software.com"
-      version="0.1.21"
+      version="0.1.22"
       provider-name="Software.com">
 
    <description url="http://www.example.com/description">
@@ -19,7 +19,7 @@ Reserved.
    </license>
 
    <url>
-      <update label="Software.com" url="https://github.com/swdotcom/swdc-eclipse-update-site/raw/master/"/>
+      <update label="Software.com" url="https://github.com/swdotcom/swdc-eclipse/tree/master/updatesite/site.xml"/>
    </url>
 
    <plugin
