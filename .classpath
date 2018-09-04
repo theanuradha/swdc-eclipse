@@ -5,6 +5,5 @@
 	<classpathentry exported="true" kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry exported="true" kind="lib" path="lib/javax.xml.bind_2.2.12.v201410011542.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/gson-2.7.jar"/>
-	<classpathentry kind="lib" path="lib/org.eclipse.jgit-5.0.1.201806211838-r.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
