@@ -3,7 +3,7 @@
    <description name="Software.com" url="https://github.com/swdotcom/swdc-eclipse-update-site/raw/master/">
       Insights into how you code.
    </description>
-   <feature url="features/com.software.eclipse.plugin_0.1.24.jar" id="com.software.eclipse.plugin" version="0.1.24">
+   <feature url="features/com.software.eclipse.plugin_0.1.25.jar" id="com.software.eclipse.plugin" version="0.1.25">
       <category name="com.software.eclipse.plugin"/>
    </feature>
    <category-def name="com.software.eclipse.plugin" label="Software.com"/>

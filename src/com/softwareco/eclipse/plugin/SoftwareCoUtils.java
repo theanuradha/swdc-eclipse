@@ -46,6 +46,8 @@ public class SoftwareCoUtils {
 	
 	private static final String KPM_ITEM_ID = "software.kpm.item";
 	
+	private static com.softwareco.eclipse.plugin.StatusLineContributionItem item;
+	
 	private final static int EOF = -1;
 
 	public static ExecutorService executorService;
@@ -65,6 +67,16 @@ public class SoftwareCoUtils {
 				.build();
 
 		executorService = Executors.newCachedThreadPool();
+		
+		item = new com.softwareco.eclipse.plugin.StatusLineContributionItem(KPM_ITEM_ID, false /*addTrailingSpaces*/);
+		
+		Listener listener = new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				SoftwareCoSessionManager.launchDashboard();
+			}
+		};
+		item.addClickListener(listener);
 	}
 	
 	public static class HttpResponseInfo {
@@ -73,6 +85,11 @@ public class SoftwareCoUtils {
 		public JsonObject jsonObj;
 	}
 	
+	/**
+	 * Return the http response info data
+	 * @param response
+	 * @return
+	 */
 	public static HttpResponseInfo getResponseInfo(HttpResponse response) {
 		HttpResponseInfo responseInfo = new HttpResponseInfo();
 		try {
@@ -85,8 +102,12 @@ public class SoftwareCoUtils {
 				responseInfo.jsonStr = jsonStr;
 			}
 			responseInfo.isOk = isOk(response);
+			if (!responseInfo.isOk) {
+				SoftwareCoSessionManager.getInstance().chekUserAuthenticationStatus();
+			}
 		} catch (Exception e) {
 			SoftwareCoLogger.error("Unable to get http response info.", e);
+			SoftwareCoSessionManager.getInstance().chekUserAuthenticationStatus();
 		}
 		return responseInfo;
 	}
@@ -137,6 +158,12 @@ public class SoftwareCoUtils {
 				+ ", payload: " + payload + ", jwt: " + jwt + "]");
 	}
 	
+	public static void reDisplayStatusMessage() {
+		if (item != null) {
+			setStatusLineMessage(item.getText(), item.getToolTipText());
+		}
+	}
+	
 	public static void setStatusLineMessage(
 			final String statusMsg,
 			final String tooltip) {
@@ -163,46 +190,37 @@ public class SoftwareCoUtils {
 				}
 				if (statusLineManager != null) {
 					// remove the status kpm item
-					IContributionItem contributeItem = statusLineManager.find(KPM_ITEM_ID);
-					if (contributeItem != null) {
-						statusLineManager.remove(contributeItem);
+					if (item != null) {
+						try {
+							statusLineManager.remove(item.getId());
+						} catch (Exception e) {
+							// unable to find existing item or error happened
+							SoftwareCoLogger.error("Unable to remove existing item by ID: " + e.getMessage());
+						}
 					}
 					
-					// create the custom item
-					com.softwareco.eclipse.plugin.StatusLineContributionItem kpmItem = null;
-					
-					kpmItem = new com.softwareco.eclipse.plugin.StatusLineContributionItem(
-								KPM_ITEM_ID);
-					
-					Listener listener = new Listener() {
-						@Override
-						public void handleEvent(Event event) {
-							SoftwareCoSessionManager.launchDashboard();
-						}
-					};
-					kpmItem.addClickListener(listener);
-					
-					kpmItem.setText(statusMsg);
-					kpmItem.setToolTipText(tooltip);
-					kpmItem.setVisible(true);
+					item.setText(statusMsg);
+					item.setToolTipText(tooltip);
+					item.setVisible(true);
 
 					String firstContribItem = null;
 					for (IContributionItem contribItem : statusLineManager.getItems()) {
 						if (contribItem instanceof StatusLineContributionItem) {
 							if (contribItem.getId().toLowerCase().equals("elementstate")) {
 								firstContribItem = contribItem.getId();
+								break;
 							}
 						}
 					}
 					if (firstContribItem != null) {
-						statusLineManager.insertBefore(firstContribItem, kpmItem);
+						statusLineManager.insertBefore(firstContribItem, item);
 					} else {
-						statusLineManager.add(kpmItem);
+						statusLineManager.add(item);
 					}
 
 					
 					// show the item right away
-					statusLineManager.markDirty();
+					// statusLineManager.markDirty();
 					statusLineManager.update(true);
 				}
 			}

@@ -128,7 +128,7 @@ public class StatusLineContributionItem extends ContributionItem {
             GC gc = new GC(statusLine);
             gc.setFont(statusLine.getFont());
             FontMetrics fm = gc.getFontMetrics();
-            widthHint = fm.getAverageCharWidth() * charWidth;
+            widthHint = (int) (fm.getAverageCharacterWidth() * charWidth);
             heightHint = fm.getHeight();
             gc.dispose();
         }
@@ -205,6 +205,10 @@ public class StatusLineContributionItem extends ContributionItem {
         this.tooltip = tooltip;
         updateMessageLabel();
         updateManager();
+    }
+    
+    public String getToolTipText() {
+    	return this.tooltip;
     }
     
     public void setImage(Image image) {

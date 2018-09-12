@@ -160,7 +160,6 @@ public class SoftwareCoHttpClientManager {
 					// save the data offline
 					String payload = SoftwareCo.gson.toJson(keystrokeCount);
 					sessionMgr.storePayload(payload);
-					sessionMgr.chekUserAuthenticationStatus();
 				}
 				
 				// reset the data

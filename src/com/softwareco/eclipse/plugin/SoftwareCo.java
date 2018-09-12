@@ -160,10 +160,10 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 					}
 				}
 				
-				// run the initial calls in 5 seconds
+				// run the initial calls in 15 seconds
 				new Thread(() -> {
 			        try {
-			            Thread.sleep(1000 * 5);
+			            Thread.sleep(1000 * 15);
 			            sessionMgr.sendOfflineData();
 			        }
 			        catch (Exception e){
@@ -171,9 +171,11 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 			        }
 			    }).start();
 				
+				ProcessKpmSessionInfoTask sessionInfoTask = new ProcessKpmSessionInfoTask();
+				
 				// run the kpm fetch task every minute
 				kpmFetchTimer = new Timer();
-				kpmFetchTimer.scheduleAtFixedRate(new ProcessKpmSessionInfoTask(), 60 * 1000, 60 * 1000);
+				kpmFetchTimer.scheduleAtFixedRate(sessionInfoTask, 0, 60 * 1000);
 			}
 		});
 	}
@@ -278,7 +280,7 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 		int numKeystrokes = docEvent.getLength();
 		
 		boolean isNewLine = false;
-		if (docEvent.getText().matches("\n") || docEvent.getText().matches("\r\n")) {
+		if (docEvent.getText().matches("\n.*") || docEvent.getText().matches("\r\n.*")) {
 			isNewLine = true;
 		}
 		
@@ -312,45 +314,43 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 			}
 	        
 	        if (numKeystrokes > 1) {
-	        		// It's a copy and paste event
+	        	// It's a copy and paste event
 		        updateFileInfoValue(fileInfo, "paste", numKeystrokes);
-		        
 		        SoftwareCoLogger.info("Software.com: Copy+Paste incremented");
 	        } else if (numKeystrokes < 0) {
-	        		int deleteKpm = Math.abs(numKeystrokes);
-	        		// It's a character delete event
+	        	int deleteKpm = Math.abs(numKeystrokes);
+	        	// It's a character delete event
 		        updateFileInfoValue(fileInfo, "delete", deleteKpm);
-		        
-			     // increment the data keystroke count
-				int incrementedCount = Integer.parseInt(keystrokeCount.getData()) + deleteKpm;
-				keystrokeCount.setData( String.valueOf(incrementedCount) );
-		        
 		        SoftwareCoLogger.info("Software.com: Delete incremented");
 	        } else if (numKeystrokes == 1) {
-	        		// increment the specific file keystroke value
+	        	// increment the specific file keystroke value
 		        updateFileInfoValue(fileInfo, "add", 1);
-				
-				// increment the data keystroke count
-				int incrementedCount = Integer.parseInt(keystrokeCount.getData()) + 1;
-				keystrokeCount.setData( String.valueOf(incrementedCount) );
-				
 				SoftwareCoLogger.info("Software.com: KPM incremented");
 	        }
+		}
+		
+		if (isNewLine || numKeystrokes != 0) {
+			// increment the data count
+			int incrementedCount = Integer.parseInt(keystrokeCount.getData()) + 1;
+			keystrokeCount.setData( String.valueOf(incrementedCount) );
 		}
         
         int filelen = (docEvent.getDocument() != null) ? docEvent.getDocument().getLength() : -1;
         if (filelen != -1) {
-        		updateFileInfoValue(fileInfo, "length", filelen);
+        	updateFileInfoValue(fileInfo, "length", filelen);
         }
         
         int lines = getPreviousLineCount(fileInfo);
         if (lines == -1) {
-        		lines = getLineCount(fileName);
+        	lines = getLineCount(fileName);
+        	if (lines == -1) {
+        		lines = 0;
+        	}
         }
         
         if (isNewLine) {
-        		lines += 1;
-        		// new lines added
+        	lines += 1;
+        	// new lines added
             updateFileInfoValue(fileInfo, "linesAdded", 1);
             SoftwareCoLogger.info("Software.com: lines added incremented");
         }
@@ -457,6 +457,8 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 				// Send the info now
 				//
 				clientMgr.sendKeystrokeData(keystrokeCount);
+				
+				SoftwareCoUtils.reDisplayStatusMessage();
 			}
 		}
 	}

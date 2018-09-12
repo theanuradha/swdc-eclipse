@@ -375,7 +375,7 @@ public class SoftwareCoSessionManager {
             	if (inFlow) {
             		statusMsg = "🚀" + " " + statusMsg;
             	}
-                SoftwareCoUtils.setStatusLineMessage(statusMsg,
+                SoftwareCoUtils.setStatusLineMessage("<S> " + statusMsg,
                         "Click to see more from Software.com");
             } else {
             	SoftwareCoUtils.setStatusLineMessage("Software.com", "Click to see more from Software.com");
