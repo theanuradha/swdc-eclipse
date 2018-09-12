@@ -2,7 +2,7 @@
 <feature
       id="com.software.eclipse.plugin"
       label="Software.com"
-      version="0.1.25"
+      version="0.1.26"
       provider-name="Software.com">
 
    <description url="http://www.example.com/description">
@@ -76,6 +76,41 @@ Reserved.
 
    <plugin
          id="org.eclipse.ui.workbench.texteditor"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.egit"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.egit.core"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.egit.doc"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.egit.mylyn.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.egit.ui"
          download-size="0"
          install-size="0"
          version="0.0.0"

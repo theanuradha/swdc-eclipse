@@ -1,10 +1,10 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Software.com
+Bundle-Name: %Bundle-Name
 Bundle-SymbolicName: com.software.eclipse.plugin;singleton:=true
-Bundle-Version: 0.1.25
+Bundle-Version: 0.1.26
 Bundle-Activator: com.softwareco.eclipse.plugin.SoftwareCo
-Bundle-Vendor: software.com
+Bundle-Vendor: %Bundle-Vendor
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.core.resources,
@@ -14,7 +14,12 @@ Require-Bundle: org.eclipse.ui,
  org.apache.httpcomponents.httpcore,
  org.eclipse.ui.workbench.texteditor,
  javax.xml.bind;bundle-version="2.2.12",
- com.google.gson;bundle-version="2.7.0"
+ com.google.gson;bundle-version="2.7.0",
+ org.eclipse.egit;bundle-version="5.0.0",
+ org.eclipse.egit.core;bundle-version="5.0.0",
+ org.eclipse.egit.doc;bundle-version="5.0.0",
+ org.eclipse.egit.mylyn.ui;bundle-version="5.0.0",
+ org.eclipse.egit.ui;bundle-version="5.0.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Export-Package: com.softwareco.eclipse.plugin

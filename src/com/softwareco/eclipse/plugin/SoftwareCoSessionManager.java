@@ -16,6 +16,8 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -47,6 +49,8 @@ public class SoftwareCoSessionManager {
 	private boolean confirmWindowOpen = false;
 	
 	private static long lastTimeAuthenticated = 0;
+	
+	private Timer authenticationCheckTimer;
 	
 	public static SoftwareCoSessionManager getInstance() {
 		if (instance == null) {
@@ -100,10 +104,6 @@ public class SoftwareCoSessionManager {
 	    String tokenVal = getItem("token");
 	    if (tokenVal == null) {
 	        return false;
-	    }
-	    
-	    if (lastTimeAuthenticated > 0 && System.currentTimeMillis() - lastTimeAuthenticated < 10000) {
-	    	return true;
 	    }
 	    
 	    boolean isOk = SoftwareCoUtils.getResponseInfo(makeApiCall("/users/ping/", false, null)).isOk;
@@ -244,7 +244,7 @@ public class SoftwareCoSessionManager {
 		String jwtToken = getItem("jwt");
 		
 		String msg = "To see your coding data in Software.com, please log in to your account.";
-		if (isOnline && !authenticated && pastThresholdTime && !confirmWindowOpen && jwtToken == null) {
+		if (isOnline && !authenticated && pastThresholdTime && !confirmWindowOpen) {
 	        // set the last update time so we don't try to ask too frequently
 	        setItem("eclipse_lastUpdateTime", String.valueOf(System.currentTimeMillis()));
 	        confirmWindowOpen = true;
@@ -281,6 +281,16 @@ public class SoftwareCoSessionManager {
 		
 		if (!authenticated || jwtToken == null) {
 			SoftwareCoUtils.setStatusLineMessage("⚠️Software.com", msg);
+			
+			// try again in 10 min
+			authenticationCheckTimer = new Timer();
+			authenticationCheckTimer.schedule(new ProcessAuthenticationCheck(), 1000 * 60 * 10);
+		}
+	}
+	
+	private class ProcessAuthenticationCheck extends TimerTask {
+		public void run() {
+			chekUserAuthenticationStatus();
 		}
 	}
 
@@ -291,7 +301,7 @@ public class SoftwareCoSessionManager {
 	    String lastUpdateTimeStr = getItem("eclipse_lastUpdateTime");
 	    Long lastUpdateTime = (lastUpdateTimeStr != null) ? Long.valueOf(lastUpdateTimeStr) : null;
 	    if (lastUpdateTime != null &&
-	        System.currentTimeMillis() - lastUpdateTime.longValue() < MILLIS_PER_HOUR * LONG_THRESHOLD_HOURS) {
+	        System.currentTimeMillis() - lastUpdateTime.longValue() < MILLIS_PER_HOUR) {
 	        return false;
 	    }
 	    return true;
@@ -382,6 +392,7 @@ public class SoftwareCoSessionManager {
             }
 		} else {
 			SoftwareCoUtils.setStatusLineMessage("⚠️Software.com", "Click to log in to Software.com");
+			chekUserAuthenticationStatus();
 		}
 	}
 	

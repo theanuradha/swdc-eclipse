@@ -160,6 +160,11 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 					}
 				}
 				
+				// set eclipse_lastUpdateTime to yesterday
+				long yesterday = System.currentTimeMillis() - (1000 * 60 * 60 * 24);
+				SoftwareCoSessionManager.setItem("eclipse_lastUpdateTime", String.valueOf(yesterday));
+				SoftwareCoSessionManager.getInstance().chekUserAuthenticationStatus();
+				
 				// run the initial calls in 15 seconds
 				new Thread(() -> {
 			        try {
@@ -171,11 +176,9 @@ public class SoftwareCo extends AbstractUIPlugin implements IStartup {
 			        }
 			    }).start();
 				
-				ProcessKpmSessionInfoTask sessionInfoTask = new ProcessKpmSessionInfoTask();
-				
 				// run the kpm fetch task every minute
 				kpmFetchTimer = new Timer();
-				kpmFetchTimer.scheduleAtFixedRate(sessionInfoTask, 0, 60 * 1000);
+				kpmFetchTimer.scheduleAtFixedRate(new ProcessKpmSessionInfoTask(), 5000, 60 * 1000);
 			}
 		});
 	}

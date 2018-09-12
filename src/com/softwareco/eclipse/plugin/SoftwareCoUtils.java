@@ -102,12 +102,8 @@ public class SoftwareCoUtils {
 				responseInfo.jsonStr = jsonStr;
 			}
 			responseInfo.isOk = isOk(response);
-			if (!responseInfo.isOk) {
-				SoftwareCoSessionManager.getInstance().chekUserAuthenticationStatus();
-			}
 		} catch (Exception e) {
 			SoftwareCoLogger.error("Unable to get http response info.", e);
-			SoftwareCoSessionManager.getInstance().chekUserAuthenticationStatus();
 		}
 		return responseInfo;
 	}
