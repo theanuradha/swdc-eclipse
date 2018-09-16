@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/com.swdc.ide.feature_0.1.27.qualifier.jar" id="com.swdc.ide.feature" version="0.1.27.qualifier">
+      <category name="swdc_core_features"/>
+   </feature>
+   <category-def name="swdc_core_features" label="Software.com Support"/>
+</site>
