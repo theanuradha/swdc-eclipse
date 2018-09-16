@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.swdc.ide</groupId>
 	<artifactId>com.swdc.ide.parent</artifactId>
-	<version>0.0.27-SNAPSHOT</version>
+	<version>0.1.27-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>Software.com Analyze Tool</name>
 	<modules>
@@ -14,15 +14,15 @@
 	</modules>
 
 	<properties>
-		<tycho-version>0.20.0</tycho-version>
+		<tycho-version>1.2.0</tycho-version>
 		<BUILD.SIGN.PATH></BUILD.SIGN.PATH>
 		<BUILD.SIGN.PASS></BUILD.SIGN.PASS>
 	</properties>
 
 	<repositories>
 		<repository>
-			<id>update37</id>
-			<url>http://download.eclipse.org/eclipse/updates/3.7</url>
+			<id>update47</id>
+			<url>http://download.eclipse.org/eclipse/updates/4.7</url>
 			<layout>p2</layout>
 		</repository>
 	</repositories>
