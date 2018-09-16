@@ -438,7 +438,7 @@ public class SoftwareCo {
 				//
 				clientMgr.sendKeystrokeData(keystrokeCount);
 				
-				SoftwareCoUtils.reDisplayStatusMessage();
+				
 			}
 		}
 	}

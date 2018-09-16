@@ -20,19 +20,12 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.eclipse.jface.action.IContributionItem;
-import org.eclipse.jface.action.IStatusLineManager;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
 import com.google.gson.JsonObject;
 import com.swdc.ide.core.SWCoreLog;
+import com.swdc.ide.core.WorkbenchWindowControlContribution;
 
 public class SoftwareCoUtils {
 
@@ -44,14 +37,12 @@ public class SoftwareCoUtils {
 	// set the launch url to use
 	public final static String launch_url = PROD_URL_ENDPOINT;
 	
-	private static final String KPM_ITEM_ID = "software.kpm.item";
 	
 	
 	private final static int EOF = -1;
 
 	public static ExecutorService executorService;
 	public static HttpClient httpClient;
-	private static StatusLineContributionItem item;
 
 	static {
 		// initialize the HttpClient
@@ -68,15 +59,6 @@ public class SoftwareCoUtils {
 
 		executorService = Executors.newCachedThreadPool();
 		
-		item = new StatusLineContributionItem(KPM_ITEM_ID, false /*addTrailingSpaces*/);
-		
-		Listener listener = new Listener() {
-			@Override
-			public void handleEvent(Event event) {
-				SoftwareCoSessionManager.launchDashboard();
-			}
-		};
-		item.addClickListener(listener);
 	}
 	
 	public static class HttpResponseInfo {
@@ -156,11 +138,6 @@ public class SoftwareCoUtils {
 
 	}
 	
-	public static void reDisplayStatusMessage() {
-		if (item != null) {
-			setStatusLineMessage(item.getText(), item.getToolTipText());
-		}
-	}
 	
 	public static void setStatusLineMessage(
 			final String statusMsg,
@@ -169,64 +146,14 @@ public class SoftwareCoUtils {
 
 		workbench.getDisplay().asyncExec(new Runnable() {
 			public void run() {
-				IStatusLineManager statusLineManager = null;
-				IWorkbenchWindow window = null;
-				try {
-					window = workbench.getActiveWorkbenchWindow();
-					IWorkbenchPage[] workbenchPages = window.getPages();
-					if (workbenchPages != null) {
-						for (IWorkbenchPage page : workbenchPages) {
-							if (page.getActivePart() instanceof IViewPart) {
-								statusLineManager = ((IViewPart) page.getActivePart()).getViewSite().getActionBars().getStatusLineManager();
-							} else if (page.getActivePart() instanceof IEditorPart) {
-								statusLineManager = ((IEditorPart) page.getActivePart()).getEditorSite().getActionBars().getStatusLineManager();
-							}
-						}
-					}
-				} catch (Exception e) {
-
-					SWCoreLog.logErrorMessage("Unable to obtain status line manager.");
-					SWCoreLog.log(e);
-				}
-				if (statusLineManager != null) {
-					// remove the status kpm item
-					if (item != null) {
-						try {
-							statusLineManager.remove(item.getId());
-						} catch (Exception e) {
-							// unable to find existing item or error happened
-
-							SWCoreLog.logErrorMessage("Unable to remove existing item by ID: " + e.getMessage());
-							SWCoreLog.log(e);
-							
-						}
-					}
 					
-					item.setText(statusMsg);
-					item.setToolTipText(tooltip);
-					item.setVisible(true);
+					WorkbenchWindowControlContribution.get().setText(statusMsg);
+					WorkbenchWindowControlContribution.get().setTooltip(tooltip);
+					WorkbenchWindowControlContribution.get().update();
 
-					String firstContribItem = null;
-					for (IContributionItem contribItem : statusLineManager.getItems()) {
-						if (contribItem instanceof StatusLineContributionItem) {
-							if (contribItem.getId().toLowerCase().equals("elementstate")) {
-								firstContribItem = contribItem.getId();
-								break;
-							}
-						}
-					}
-					if (firstContribItem != null) {
-						statusLineManager.insertBefore(firstContribItem, item);
-					} else {
-						statusLineManager.add(item);
-					}
 
-					
-					// show the item right away
-					// statusLineManager.markDirty();
-					statusLineManager.update(true);
 				}
-			}
+			
 		});
 	}
 	

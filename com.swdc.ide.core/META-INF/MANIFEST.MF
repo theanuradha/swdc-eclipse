@@ -2,10 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: %Bundle-Name
 Bundle-SymbolicName: com.swdc.ide.core;singleton:=true
-Bundle-Version: 5.1.0.qualifier
+Bundle-Version: 0.1.27.qualifier
 Bundle-Vendor: %Bundle-Vendor
 Bundle-Category: %Bundle-Category
-Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.core.resources,
@@ -15,9 +14,9 @@ Require-Bundle: org.eclipse.ui,
  org.apache.httpcomponents.httpclient,
  org.eclipse.jface.text,
  org.apache.httpcomponents.httpcore,
- com.google.gson,
  org.eclipse.ui.workbench.texteditor
-Bundle-ClassPath: .
+Bundle-ClassPath: .,
+ extlibs/gson-2.7.jar
 Bundle-Activator: com.swdc.ide.core.SWCorePlugin
 Bundle-Localization: plugin
 Bundle-ActivationPolicy: lazy
@@ -28,3 +27,5 @@ Import-Package: org.eclipse.equinox.internal.p2.ui,
  org.eclipse.equinox.p2.repository.artifact,
  org.eclipse.equinox.p2.repository.metadata,
  org.eclipse.equinox.p2.ui
+Automatic-Module-Name: com.swdc.ide.core
+Bundle-RequiredExecutionEnvironment: J2SE-1.5
