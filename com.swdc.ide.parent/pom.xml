@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.swdc.ide</groupId>
+	<artifactId>com.swdc.ide.parent</artifactId>
+	<version>0.1.27-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>Software.com Analyze Tool</name>
+	<modules>
+		<module>../com.swdc.ide.core</module>
+		<module>../com.swdc.ide.feature</module>
+		<module>../com.swdc.ide.site</module>
+
+	</modules>
+
+	<properties>
+		<tycho-version>1.2.0</tycho-version>
+		<BUILD.SIGN.PATH></BUILD.SIGN.PATH>
+		<BUILD.SIGN.PASS></BUILD.SIGN.PASS>
+	</properties>
+
+	<repositories>
+		<repository>
+			<id>update47</id>
+			<url>http://download.eclipse.org/eclipse/updates/4.7</url>
+			<layout>p2</layout>
+		</repository>
+	</repositories>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-maven-plugin</artifactId>
+				<version>${tycho-version}</version>
+				<extensions>true</extensions>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>target-platform-configuration</artifactId>
+				<version>${tycho-version}</version>
+			</plugin>
+
+
+
+
+		</plugins>
+	</build>
+    <profiles>
+		<profile>
+			<id>release-sign</id>
+			<build>
+					<plugins>
+
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-jarsigner-plugin</artifactId>
+							<version>1.2</version>
+							<executions>
+								<execution>
+									<id>sign</id>
+									<goals>
+										<goal>sign</goal>
+									</goals>
+								</execution>
+							</executions>
+							<configuration>
+								<keystore>${BUILD.SIGN.PATH}</keystore>
+								<alias>server</alias>
+								<storepass>${BUILD.SIGN.PASS}</storepass>
+								<keypass>${BUILD.SIGN.PASS}</keypass>
+								<arguments>
+									<arg>-digestalg</arg>
+									<arg>SHA1</arg>
+									<arg>-sigalg</arg>
+									<arg>SHA1withRSA</arg>
+								</arguments>
+							</configuration>
+						</plugin>
+
+					</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+</project>

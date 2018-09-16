@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+      <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            class="com.swdc.ide.core.preferences.InfoPreferencePage"
+            id="com.swdc.ide.core.PreferencesPage"
+            name="Software">
+      </page>
+   </extension>
+   <extension
+         point="org.eclipse.ui.startup">
+      <startup
+            class="com.swdc.ide.core.activation.SWBootstrap">
+      </startup>
+   </extension>
+   <extension
+         point="org.eclipse.ui.menus">
+      <menuContribution
+            allPopups="false"
+            locationURI="toolbar:org.eclipse.ui.trim.status">
+         <toolbar
+               id="com.swdc.ide.core.toolbar">
+            <control
+                  class="com.swdc.ide.core.WorkbenchWindowControlContribution">
+            </control>
+         </toolbar>
+      </menuContribution>
+   </extension>
+</plugin>
