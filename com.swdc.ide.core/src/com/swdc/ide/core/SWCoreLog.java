@@ -75,15 +75,15 @@ public class SWCoreLog
             status = new Status(IStatus.ERROR, SWCorePlugin.ID, IStatus.OK, message, e);
         }
         ResourcesPlugin.getPlugin().getLog().log(status);
-        Display display = SWCorePlugin.getStandardDisplay();
-        final IStatus fstatus = status;
-        display.asyncExec(new Runnable()
-        {
-            public void run()
-            {
-                ErrorDialog.openError(null, title, null, fstatus);
-            }
-        });
+//        Display display = SWCorePlugin.getStandardDisplay();
+//        final IStatus fstatus = status;
+//        display.asyncExec(new Runnable()
+//        {
+//            public void run()
+//            {
+//                ErrorDialog.openError(null, title, null, fstatus);
+//            }
+//        });
     }
 
     public static void logException(Throwable e)

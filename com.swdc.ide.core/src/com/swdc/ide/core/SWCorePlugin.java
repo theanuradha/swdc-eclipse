@@ -53,7 +53,6 @@ public class SWCorePlugin extends AbstractUIPlugin implements IStartup
         softwareCo = null;
         plugin = null;
     }
-
     public BundleContext getBundleContext()
     {
         return bundleContext;
